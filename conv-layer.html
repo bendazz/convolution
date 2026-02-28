@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conv + Pool Layer — Tensor Shape Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 1100px; margin: 0 auto 0.8rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.92rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* ---------- controls ---------- */
+  .controls-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .ctrl-group label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  .ctrl-group select,
+  .ctrl-group input[type="number"] {
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+  }
+
+  .ctrl-group input[type="range"] {
+    accent-color: #6366f1;
+    width: 120px;
+  }
+
+  .ctrl-group .range-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    min-width: 1.5em;
+    text-align: center;
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ---------- diagram ---------- */
+  .diagram-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    min-height: 280px;
+    padding: 1rem 0;
+  }
+
+  .tensor-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tensor-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  .tensor-dims {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* 3D stacked block */
+  .tensor-block {
+    position: relative;
+    perspective: 600px;
+  }
+
+  .tensor-stack {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-10deg) rotateY(20deg);
+  }
+
+  .tensor-slice {
+    position: absolute;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  /* arrow */
+  .flow-arrow {
+    font-size: 2rem;
+    color: #475569;
+    flex-shrink: 0;
+  }
+
+  /* kernel bank */
+  .kernel-bank {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .kernel-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 320px;
+  }
+
+  .kernel-mini {
+    position: relative;
+    perspective: 400px;
+  }
+
+  .kernel-mini .tensor-stack {
+    transform: rotateX(-8deg) rotateY(15deg);
+  }
+
+  /* ---------- summary ---------- */
+  .summary-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .summary-line {
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+    line-height: 1.6;
+  }
+
+  .summary-line .hl-pool { color: #f9a8d4; font-weight: 700; }
+  .summary-line .hl-in   { color: #93c5fd; font-weight: 700; }
+  .summary-line .hl-kern { color: #c4b5fd; font-weight: 700; }
+  .summary-line .hl-out  { color: #6ee7b7; font-weight: 700; }
+  .summary-line .hl-dim  { color: #fbbf24; }
+
+  .param-count {
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .param-count strong {
+    color: #fbbf24;
+    font-weight: 700;
+  }
+
+  .insight {
+    margin-top: 0.6rem;
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .insight em {
+    color: #94a3b8;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  @media (max-width: 800px) {
+    .diagram { flex-direction: column; gap: 1.2rem; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Conv + Pool Layer — Tensor Shapes</h1>
+<p class="subtitle">See how an input tensor flows through a convolutional layer and then a max-pooling layer.</p>
+
+<div class="app">
+
+  <!-- Controls -->
+  <div class="controls-panel">
+    <div class="ctrl-group">
+      <label>Input Type</label>
+      <select id="inputType">
+        <option value="1">Grayscale (1 ch)</option>
+        <option value="3" selected>RGB (3 ch)</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Input Height</label>
+      <select id="inputH">
+        <option>8</option><option>16</option><option>28</option>
+        <option selected>32</option><option>64</option><option>128</option><option>224</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Input Width</label>
+      <select id="inputW">
+        <option>8</option><option>16</option><option>28</option>
+        <option selected>32</option><option>64</option><option>128</option><option>224</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Kernel Size</label>
+      <select id="kernelSize">
+        <option value="1">1 &times; 1</option>
+        <option value="3" selected>3 &times; 3</option>
+        <option value="5">5 &times; 5</option>
+        <option value="7">7 &times; 7</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Num Filters (N)</label>
+      <div class="ctrl-row">
+        <input type="range" id="numFilters" min="1" max="16" value="4">
+        <span class="range-val" id="numFiltersVal">4</span>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <label>Stride</label>
+      <select id="stride">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Padding</label>
+      <select id="padding">
+        <option value="none" selected>None</option>
+        <option value="same">Same</option>
+      </select>
+    </div>
+    <div style="width:1px;height:2rem;background:#334155;"></div>
+    <div class="ctrl-group">
+      <label>Pool Size</label>
+      <select id="poolSize">
+        <option value="0">None</option>
+        <option value="2" selected>2 &times; 2</option>
+        <option value="3">3 &times; 3</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Diagram -->
+  <div class="diagram-panel">
+    <div class="diagram" id="diagram"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-panel">
+    <div class="summary-line" id="summaryLine"></div>
+    <div class="param-count" id="paramCount"></div>
+    <div class="insight" id="insight"></div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ---- color palettes ----
+  const inputColors = {
+    1: ['rgba(148,163,184,0.7)'],                           // gray
+    3: ['rgba(239,68,68,0.6)', 'rgba(34,197,94,0.55)', 'rgba(59,130,246,0.6)']  // R, G, B
+  };
+  const inputLabels = {
+    1: ['Gray'],
+    3: ['R', 'G', 'B']
+  };
+
+  const filterPalette = [
+    'rgba(251,191,36,0.55)', 'rgba(168,85,247,0.55)', 'rgba(236,72,153,0.55)',
+    'rgba(20,184,166,0.55)', 'rgba(249,115,22,0.55)', 'rgba(99,102,241,0.55)',
+    'rgba(234,179,8,0.55)',  'rgba(14,165,233,0.55)', 'rgba(244,63,94,0.55)',
+    'rgba(34,197,94,0.55)',  'rgba(217,70,239,0.55)', 'rgba(251,146,60,0.55)',
+    'rgba(56,189,248,0.55)', 'rgba(163,230,53,0.55)', 'rgba(232,121,249,0.55)',
+    'rgba(45,212,191,0.55)'
+  ];
+
+  // ---- state ----
+  function getState() {
+    const cIn = parseInt(document.getElementById('inputType').value);
+    const H = parseInt(document.getElementById('inputH').value);
+    const W = parseInt(document.getElementById('inputW').value);
+    const K = parseInt(document.getElementById('kernelSize').value);
+    const N = parseInt(document.getElementById('numFilters').value);
+    const S = parseInt(document.getElementById('stride').value);
+    const pad = document.getElementById('padding').value;
+    const P = pad === 'same' ? Math.floor(K / 2) : 0;
+    const convH = Math.floor((H + 2 * P - K) / S) + 1;
+    const convW = Math.floor((W + 2 * P - K) / S) + 1;
+    const poolK = parseInt(document.getElementById('poolSize').value);
+    const usePool = poolK > 0;
+    const poolH = usePool ? Math.floor(convH / poolK) : convH;
+    const poolW = usePool ? Math.floor(convW / poolK) : convW;
+    return { cIn, H, W, K, N, S, P, pad, convH, convW, poolK, usePool, poolH, poolW };
+  }
+
+  // ---- build a stacked tensor visual ----
+  // Returns an element with stacked slices.
+  // sliceW/sliceH = visual pixel size of each slice face
+  // depth = number of slices, colors = array of rgba, labels = array of strings
+  // offsetPerSlice = how much each slice is offset (isometric depth)
+  function buildStack(sliceW, sliceH, depth, colors, labels, offsetPerSlice) {
+    const off = offsetPerSlice || 6;
+    const totalW = sliceW + (depth - 1) * off;
+    const totalH = sliceH + (depth - 1) * off;
+
+    const container = document.createElement('div');
+    container.className = 'tensor-stack';
+    container.style.width = totalW + 'px';
+    container.style.height = totalH + 'px';
+    container.style.position = 'relative';
+
+    for (let i = 0; i < depth; i++) {
+      const slice = document.createElement('div');
+      slice.className = 'tensor-slice';
+      slice.style.width = sliceW + 'px';
+      slice.style.height = sliceH + 'px';
+      slice.style.left = (i * off) + 'px';
+      slice.style.top = ((depth - 1 - i) * off) + 'px';
+      slice.style.zIndex = i;
+      const ci = i % colors.length;
+      slice.style.background = colors[ci];
+      if (labels && labels[ci] && depth <= 6) {
+        slice.textContent = labels[ci];
+      }
+      container.appendChild(slice);
+    }
+
+    return { el: container, totalW, totalH };
+  }
+
+  // ---- render ----
+  function render() {
+    const s = getState();
+    const diagram = document.getElementById('diagram');
+    diagram.innerHTML = '';
+
+    // scaling: map spatial dims to visual pixels
+    // We want the largest tensor face to be ~140px
+    const maxSpatial = Math.max(s.H, s.W, s.convH, s.convW, s.poolH, s.poolW);
+    const scale = Math.min(140 / maxSpatial, 18);
+    const minPx = 28;
+
+    const inSliceW = Math.max(minPx, Math.round(s.W * scale));
+    const inSliceH = Math.max(minPx, Math.round(s.H * scale));
+    const convSliceW = Math.max(minPx, Math.round(s.convW * scale));
+    const convSliceH = Math.max(minPx, Math.round(s.convH * scale));
+    const poolSliceW = Math.max(minPx, Math.round(s.poolW * scale));
+    const poolSliceH = Math.max(minPx, Math.round(s.poolH * scale));
+
+    // kernel visual size: small fixed
+    const kVis = Math.max(24, Math.min(40, Math.round(s.K * 6)));
+
+    const depthOff = s.cIn <= 3 ? 10 : 6;
+    const outDepthOff = s.N <= 8 ? 8 : s.N <= 12 ? 5 : 4;
+
+    // output channel colors (shared for conv output and pool output)
+    const outColors = [];
+    for (let i = 0; i < s.N; i++) outColors.push(filterPalette[i % filterPalette.length]);
+
+    // --- Input tensor ---
+    const inColors = inputColors[s.cIn] || inputColors[1];
+    const inLabels = inputLabels[s.cIn] || inputLabels[1];
+    const inStack = buildStack(inSliceW, inSliceH, s.cIn, inColors, inLabels, depthOff);
+
+    const inGroup = document.createElement('div');
+    inGroup.className = 'tensor-group';
+    inGroup.innerHTML = `<span class="tensor-label">Input</span>`;
+    const inBlock = document.createElement('div');
+    inBlock.className = 'tensor-block';
+    inBlock.style.width = inStack.totalW + 'px';
+    inBlock.style.height = inStack.totalH + 'px';
+    inBlock.appendChild(inStack.el);
+    inGroup.appendChild(inBlock);
+    inGroup.innerHTML += `<span class="tensor-dims">${s.H} &times; ${s.W} &times; ${s.cIn}</span>`;
+    diagram.appendChild(inGroup);
+
+    // --- Arrow ---
+    diagram.innerHTML += '<div class="flow-arrow">&rarr;</div>';
+
+    // --- Kernel bank ---
+    const kernBank = document.createElement('div');
+    kernBank.className = 'tensor-group';
+    kernBank.innerHTML = `<span class="tensor-label">${s.N} Filter${s.N > 1 ? 's' : ''}</span>`;
+
+    const kernRow = document.createElement('div');
+    kernRow.className = 'kernel-row';
+
+    const maxKernShow = Math.min(s.N, 8);
+    for (let f = 0; f < maxKernShow; f++) {
+      const kStack = buildStack(kVis, kVis, s.cIn, inColors, inLabels, depthOff > 6 ? 8 : 5);
+      const kMini = document.createElement('div');
+      kMini.className = 'kernel-mini';
+      kMini.style.width = kStack.totalW + 'px';
+      kMini.style.height = kStack.totalH + 'px';
+      kMini.style.outline = `2px solid ${filterPalette[f % filterPalette.length].replace('0.55', '0.8')}`;
+      kMini.style.borderRadius = '4px';
+      kMini.appendChild(kStack.el);
+      kernRow.appendChild(kMini);
+    }
+    if (s.N > maxKernShow) {
+      const more = document.createElement('div');
+      more.style.cssText = 'color:#64748b;font-size:0.85rem;align-self:center;padding:0.3rem;';
+      more.textContent = `+${s.N - maxKernShow} more`;
+      kernRow.appendChild(more);
+    }
+
+    kernBank.appendChild(kernRow);
+    kernBank.innerHTML += `<span class="tensor-dims">each: ${s.K} &times; ${s.K} &times; ${s.cIn}</span>`;
+    diagram.appendChild(kernBank);
+
+    // --- Arrow ---
+    diagram.innerHTML += '<div class="flow-arrow">&rarr;</div>';
+
+    // --- Conv output tensor ---
+    const convStack = buildStack(convSliceW, convSliceH, s.N, outColors, null, outDepthOff);
+
+    const convGroup = document.createElement('div');
+    convGroup.className = 'tensor-group';
+    convGroup.innerHTML = `<span class="tensor-label">After Conv</span>`;
+    const convBlock = document.createElement('div');
+    convBlock.className = 'tensor-block';
+    convBlock.style.width = convStack.totalW + 'px';
+    convBlock.style.height = convStack.totalH + 'px';
+    convBlock.appendChild(convStack.el);
+    convGroup.appendChild(convBlock);
+    convGroup.innerHTML += `<span class="tensor-dims">${s.convH} &times; ${s.convW} &times; ${s.N}</span>`;
+    diagram.appendChild(convGroup);
+
+    // --- Pool stage (if enabled) ---
+    if (s.usePool) {
+      diagram.innerHTML += '<div class="flow-arrow">&rarr;</div>';
+
+      // Pool operation label
+      const poolOp = document.createElement('div');
+      poolOp.className = 'tensor-group';
+      poolOp.innerHTML = `<span class="tensor-label">Max Pool</span>` +
+        `<span class="tensor-dims" style="font-size:0.85rem;">${s.poolK}&times;${s.poolK}</span>` +
+        `<span style="font-size:0.68rem;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;">stride ${s.poolK}</span>`;
+      diagram.appendChild(poolOp);
+
+      diagram.innerHTML += '<div class="flow-arrow">&rarr;</div>';
+
+      // Pool output tensor — same depth as conv output, smaller spatial
+      const poolStack = buildStack(poolSliceW, poolSliceH, s.N, outColors, null, outDepthOff);
+
+      const poolGroup = document.createElement('div');
+      poolGroup.className = 'tensor-group';
+      poolGroup.innerHTML = `<span class="tensor-label">After Pool</span>`;
+      const poolBlock = document.createElement('div');
+      poolBlock.className = 'tensor-block';
+      poolBlock.style.width = poolStack.totalW + 'px';
+      poolBlock.style.height = poolStack.totalH + 'px';
+      poolBlock.appendChild(poolStack.el);
+      poolGroup.appendChild(poolBlock);
+      poolGroup.innerHTML += `<span class="tensor-dims">${s.poolH} &times; ${s.poolW} &times; ${s.N}</span>`;
+      diagram.appendChild(poolGroup);
+    }
+
+    // --- Summary ---
+    const padStr = s.pad === 'same' ? `, pad=${s.P}` : '';
+    const strideStr = s.S > 1 ? `, stride=${s.S}` : '';
+    let summaryHTML =
+      `<span class="hl-in">${s.H}&times;${s.W}&times;${s.cIn}</span>` +
+      ` &rarr; Conv(<span class="hl-kern">${s.K}&times;${s.K}</span>, <span class="hl-kern">${s.N} filters</span>${strideStr}${padStr})` +
+      ` &rarr; <span class="hl-out">${s.convH}&times;${s.convW}&times;${s.N}</span>`;
+    if (s.usePool) {
+      summaryHTML +=
+        ` &rarr; MaxPool(<span class="hl-pool">${s.poolK}&times;${s.poolK}</span>)` +
+        ` &rarr; <span class="hl-out">${s.poolH}&times;${s.poolW}&times;${s.N}</span>`;
+    }
+    document.getElementById('summaryLine').innerHTML = summaryHTML;
+
+    const params = s.N * s.K * s.K * s.cIn + s.N;
+    const poolNote = s.usePool ? ' (pooling adds 0 parameters)' : '';
+    document.getElementById('paramCount').innerHTML =
+      `Learnable parameters: <strong>${params.toLocaleString()}</strong> ` +
+      `&nbsp;(${s.N} &times; ${s.K} &times; ${s.K} &times; ${s.cIn} weights + ${s.N} biases)` + poolNote;
+
+    const insights = [];
+    insights.push(`Each filter has depth <em>${s.cIn}</em> to match the input channels.`);
+    insights.push(`The <em>${s.N}</em> filters produce <em>${s.N}</em> output channels (feature maps).`);
+    if (s.pad === 'same' && s.S === 1) {
+      insights.push(`"Same" padding preserves the spatial dimensions.`);
+    } else if (s.pad === 'none' && s.K > 1) {
+      insights.push(`Without padding, spatial size shrinks by <em>${s.K - 1}</em> (kernel size &minus; 1).`);
+    }
+    if (s.S > 1) {
+      insights.push(`Stride ${s.S} halves the spatial dimensions${s.pad === 'same' ? '' : ' (on top of the kernel reduction)'}.`);
+    }
+    if (s.usePool) {
+      insights.push(`Max-pooling reduces spatial size by ${s.poolK}&times; but <em>preserves all ${s.N} channels</em>.`);
+      insights.push(`Pooling has <em>no learnable parameters</em>.`);
+    }
+    document.getElementById('insight').innerHTML = insights.join(' ');
+  }
+
+  // ---- events ----
+  document.querySelectorAll('.controls-panel select, .controls-panel input').forEach(el => {
+    el.addEventListener('input', () => {
+      document.getElementById('numFiltersVal').textContent =
+        document.getElementById('numFilters').value;
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
