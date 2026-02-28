@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Convolution Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    color: #f8fafc;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ---------- layout ---------- */
+  .app {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .top-row {
+    display: flex;
+    gap: 1.2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .panel {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    border: 1px solid #334155;
+  }
+
+  .panel h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 0.7rem;
+  }
+
+  /* ---------- grids ---------- */
+  .grid-wrap { display: flex; justify-content: center; }
+
+  .grid {
+    display: inline-grid;
+    gap: 2px;
+    user-select: none;
+  }
+
+  .cell {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #334155;
+    color: #e2e8f0;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  /* image grid: hoverable region */
+  #imageGrid .cell { cursor: pointer; }
+  #imageGrid .cell.in-kernel {
+    background: #3b82f6;
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 0 8px rgba(59,130,246,0.5);
+    z-index: 2;
+  }
+  #imageGrid .cell.center-kernel {
+    background: #f59e0b;
+    color: #1e293b;
+    transform: scale(1.12);
+    box-shadow: 0 0 12px rgba(245,158,11,0.6);
+    z-index: 3;
+  }
+
+  /* kernel grid */
+  #kernelGrid .cell {
+    cursor: text;
+    background: #4338ca;
+    color: #e0e7ff;
+    font-size: 0.85rem;
+  }
+  #kernelGrid .cell input {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: #e0e7ff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    outline: none;
+  }
+  #kernelGrid .cell input:focus {
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+  }
+
+  /* output grid */
+  #outputGrid .cell {
+    font-size: 0.75rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+  }
+  #outputGrid .cell.active-output {
+    background: #065f46;
+    color: #6ee7b7;
+    font-weight: 700;
+    border-color: #10b981;
+    transform: scale(1.08);
+    box-shadow: 0 0 8px rgba(16,185,129,0.4);
+    z-index: 2;
+  }
+  #outputGrid .cell.computed {
+    color: #cbd5e1;
+    background: #1e293b;
+  }
+
+  /* ---------- computation panel ---------- */
+  .computation {
+    display: flex;
+    gap: 1.2rem;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .comp-block {
+    text-align: center;
+  }
+
+  .comp-block h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .comp-grid {
+    display: inline-grid;
+    gap: 2px;
+  }
+
+  .comp-cell {
+    width: 56px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 3px;
+  }
+
+  .comp-cell.patch   { background: #1e3a5f; color: #93c5fd; }
+  .comp-cell.kern    { background: #3b1f7e; color: #c4b5fd; }
+  .comp-cell.product { background: #1e293b; color: #fbbf24; border: 1px solid #334155; }
+
+  .operator {
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: #475569;
+    align-self: center;
+    padding-top: 1rem;
+  }
+
+  .result-box {
+    align-self: center;
+    padding-top: 1rem;
+    text-align: center;
+  }
+
+  .result-box .sum-label {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .result-box .sum-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #10b981;
+    margin-top: 0.15rem;
+  }
+
+  .sum-breakdown {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    margin-top: 0.5rem;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+    min-height: 1.4em;
+  }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+
+  .controls button {
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .controls button:hover {
+    background: #334155;
+    border-color: #64748b;
+  }
+
+  .controls button.active {
+    background: #4338ca;
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  .controls select {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+  }
+
+  /* ---------- stride / padding controls ---------- */
+  .param-row {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 0.3rem;
+  }
+
+  .param-row label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .param-row input[type="number"] {
+    width: 50px;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+
+  .param-row input[type="checkbox"] {
+    accent-color: #6366f1;
+  }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .top-row { flex-direction: column; align-items: center; }
+    .computation { flex-direction: column; align-items: center; }
+    .operator { padding-top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Interactive Convolution Demo</h1>
+<p class="subtitle">Hover over the image to slide the kernel and watch the convolution compute step by step.</p>
+
+<div class="app">
+
+  <!-- Top row: image, kernel, output -->
+  <div class="top-row">
+
+    <!-- Image matrix -->
+    <div class="panel">
+      <h2>Input Image</h2>
+      <div class="controls">
+        <label style="font-size:0.82rem;color:#94a3b8;">Preset:&nbsp;</label>
+        <select id="imagePreset">
+          <option value="gradient">Gradient</option>
+          <option value="edges">Edges</option>
+          <option value="checkerboard">Checkerboard</option>
+          <option value="random">Random</option>
+        </select>
+      </div>
+      <div class="grid-wrap"><div class="grid" id="imageGrid"></div></div>
+    </div>
+
+    <!-- Kernel -->
+    <div class="panel">
+      <h2>Kernel (Filter)</h2>
+      <div class="controls" id="kernelControls">
+        <label style="font-size:0.82rem;color:#94a3b8;">Size:&nbsp;</label>
+        <select id="kernelSizeSelect">
+          <option value="1">1&times;1</option>
+          <option value="3" selected>3&times;3</option>
+          <option value="5">5&times;5</option>
+          <option value="7">7&times;7</option>
+        </select>
+      </div>
+      <div class="controls" id="kernelPresets">
+        <button data-kernel="identity">Identity</button>
+        <button data-kernel="edge">Edge</button>
+        <button data-kernel="sharpen">Sharpen</button>
+        <button data-kernel="blur">Blur</button>
+        <button data-kernel="emboss">Emboss</button>
+      </div>
+      <div class="grid-wrap"><div class="grid" id="kernelGrid"></div></div>
+      <div class="param-row">
+        <label>Stride: <input type="number" id="strideInput" value="1" min="1" max="4"></label>
+        <label><input type="checkbox" id="paddingCheck"> Zero-padding</label>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="panel">
+      <h2>Output Feature Map</h2>
+      <div class="grid-wrap"><div class="grid" id="outputGrid"></div></div>
+      <div class="hint" id="outputSize"></div>
+    </div>
+  </div>
+
+  <!-- Computation breakdown -->
+  <div class="panel">
+    <h2>Computation at Current Position</h2>
+    <div class="computation" id="computation">
+      <div class="comp-block">
+        <h3>Image Patch</h3>
+        <div class="comp-grid" id="compPatch"></div>
+      </div>
+      <div class="operator">&times;</div>
+      <div class="comp-block">
+        <h3>Kernel</h3>
+        <div class="comp-grid" id="compKernel"></div>
+      </div>
+      <div class="operator">=</div>
+      <div class="comp-block">
+        <h3>Element-wise Products</h3>
+        <div class="comp-grid" id="compProduct"></div>
+      </div>
+      <div class="operator">&rarr;</div>
+      <div class="result-box">
+        <div class="sum-label">Sum</div>
+        <div class="sum-value" id="compSum">—</div>
+      </div>
+    </div>
+    <div class="sum-breakdown" id="sumBreakdown"></div>
+    <div class="hint">Each output cell = sum of (patch &times; kernel) element-wise products.</div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ---- state ----
+  const IMG_SIZE = 7;
+  let kernSize = 3;
+  let image = [];
+  let kernel = [];
+  let stride = 1;
+  let usePadding = false;
+  let padding = 0;
+  let hoverR = -1, hoverC = -1; // kernel top-left in padded coords
+
+  // ---- preset data ----
+  const imagePresets = {
+    gradient() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++) row.push(Math.round((r * IMG_SIZE + c) / (IMG_SIZE * IMG_SIZE - 1) * 255));
+        m.push(row);
+      }
+      return m;
+    },
+    edges() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++) {
+          row.push((r >= 2 && r <= 4 && c >= 2 && c <= 4) ? 200 : 50);
+        }
+        m.push(row);
+      }
+      return m;
+    },
+    checkerboard() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++) row.push(((r + c) % 2 === 0) ? 255 : 0);
+        m.push(row);
+      }
+      return m;
+    },
+    random() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++) row.push(Math.floor(Math.random() * 256));
+        m.push(row);
+      }
+      return m;
+    }
+  };
+
+  // generate presets for any odd kernel size
+  function makePreset(name, k) {
+    const mid = Math.floor(k / 2);
+    const m = Array.from({length: k}, () => Array(k).fill(0));
+    switch (name) {
+      case 'identity':
+        m[mid][mid] = 1;
+        return m;
+      case 'edge':
+        for (let r = 0; r < k; r++)
+          for (let c = 0; c < k; c++)
+            m[r][c] = -1;
+        m[mid][mid] = k * k - 1;
+        return m;
+      case 'sharpen':
+        m[mid][mid] = 5;
+        if (mid > 0) { m[mid-1][mid] = -1; m[mid+1][mid] = -1; m[mid][mid-1] = -1; m[mid][mid+1] = -1; }
+        return m;
+      case 'blur':
+        for (let r = 0; r < k; r++)
+          for (let c = 0; c < k; c++)
+            m[r][c] = 1;
+        return m;
+      case 'emboss':
+        for (let r = 0; r < k; r++)
+          for (let c = 0; c < k; c++)
+            m[r][c] = Math.sign(c - mid) + Math.sign(r - mid) === 0 ? (r === mid && c === mid ? 1 : 0) : Math.sign(c - mid) + Math.sign(r - mid);
+        return m;
+      default:
+        m[mid][mid] = 1;
+        return m;
+    }
+  }
+
+  function updatePadding() {
+    padding = usePadding ? Math.floor(kernSize / 2) : 0;
+  }
+
+  // ---- helpers ----
+  function getPixel(r, c) {
+    const ri = r - padding, ci = c - padding;
+    if (ri < 0 || ri >= IMG_SIZE || ci < 0 || ci >= IMG_SIZE) return 0;
+    return image[ri][ci];
+  }
+
+  function paddedSize() { return IMG_SIZE + 2 * padding; }
+
+  function outputSize() { return Math.floor((paddedSize() - kernSize) / stride) + 1; }
+
+  function convolveAt(or, oc) {
+    // or, oc = output row/col
+    const startR = or * stride;
+    const startC = oc * stride;
+    let sum = 0;
+    for (let kr = 0; kr < kernSize; kr++)
+      for (let kc = 0; kc < kernSize; kc++)
+        sum += getPixel(startR + kr, startC + kc) * kernel[kr][kc];
+    return sum;
+  }
+
+  // ---- rendering ----
+  function buildImageGrid() {
+    const grid = document.getElementById('imageGrid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${IMG_SIZE}, 46px)`;
+    for (let r = 0; r < IMG_SIZE; r++) {
+      for (let c = 0; c < IMG_SIZE; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.textContent = image[r][c];
+        // brightness tint
+        const v = image[r][c];
+        const bg = `rgb(${30 + v * 0.35}, ${40 + v * 0.35}, ${60 + v * 0.42})`;
+        cell.style.background = bg;
+        cell.addEventListener('mouseenter', () => onHover(r, c));
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function buildKernelGrid() {
+    const grid = document.getElementById('kernelGrid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${kernSize}, 46px)`;
+    for (let r = 0; r < kernSize; r++) {
+      for (let c = 0; c < kernSize; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.value = kernel[r][c];
+        inp.addEventListener('change', () => {
+          kernel[r][c] = parseFloat(inp.value) || 0;
+          clearActiveKernelButton();
+          fullUpdate();
+        });
+        cell.appendChild(inp);
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function buildOutputGrid() {
+    const os = outputSize();
+    const grid = document.getElementById('outputGrid');
+    grid.innerHTML = '';
+    if (os <= 0) {
+      document.getElementById('outputSize').textContent = 'Kernel too large — add padding or reduce kernel size';
+      return;
+    }
+    grid.style.gridTemplateColumns = `repeat(${os}, 46px)`;
+    for (let r = 0; r < os; r++) {
+      for (let c = 0; c < os; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell computed';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.textContent = convolveAt(r, c);
+        grid.appendChild(cell);
+      }
+    }
+    document.getElementById('outputSize').textContent = `${os} \u00d7 ${os} output`;
+  }
+
+  function highlightImage() {
+    const half = Math.floor(kernSize / 2);
+    const cells = document.querySelectorAll('#imageGrid .cell');
+    cells.forEach(cell => {
+      cell.classList.remove('in-kernel', 'center-kernel');
+      const r = parseInt(cell.dataset.r);
+      const c = parseInt(cell.dataset.c);
+      if (hoverR >= 0) {
+        const topR = hoverR - padding;
+        const topC = hoverC - padding;
+        if (r >= topR && r < topR + kernSize && c >= topC && c < topC + kernSize) {
+          cell.classList.add('in-kernel');
+          if (r === topR + half && c === topC + half) cell.classList.add('center-kernel');
+        }
+      }
+      // restore brightness bg when not highlighted
+      if (!cell.classList.contains('in-kernel')) {
+        const v = image[r][c];
+        cell.style.background = `rgb(${30 + v * 0.35}, ${40 + v * 0.35}, ${60 + v * 0.42})`;
+      } else {
+        cell.style.background = '';
+      }
+    });
+  }
+
+  function highlightOutput() {
+    const os = outputSize();
+    // convert hoverR/hoverC (top-left of patch in padded coords) to output coords
+    const outR = (hoverR) / stride;
+    const outC = (hoverC) / stride;
+    const cells = document.querySelectorAll('#outputGrid .cell');
+    cells.forEach(cell => {
+      cell.classList.remove('active-output');
+      const r = parseInt(cell.dataset.r);
+      const c = parseInt(cell.dataset.c);
+      if (r === outR && c === outC) cell.classList.add('active-output');
+    });
+  }
+
+  function updateComputation() {
+    const patchGrid = document.getElementById('compPatch');
+    const kernGrid = document.getElementById('compKernel');
+    const prodGrid = document.getElementById('compProduct');
+    const sumEl = document.getElementById('compSum');
+    const breakdownEl = document.getElementById('sumBreakdown');
+
+    // scale cell widths down for larger kernels
+    const cellW = kernSize <= 3 ? 56 : kernSize <= 5 ? 46 : 38;
+    const cols = `repeat(${kernSize}, ${cellW}px)`;
+    patchGrid.style.gridTemplateColumns = cols;
+    kernGrid.style.gridTemplateColumns = cols;
+    prodGrid.style.gridTemplateColumns = cols;
+
+    patchGrid.innerHTML = '';
+    kernGrid.innerHTML = '';
+    prodGrid.innerHTML = '';
+
+    if (hoverR < 0) {
+      sumEl.textContent = '—';
+      breakdownEl.textContent = '';
+      for (let i = 0; i < kernSize * kernSize; i++) {
+        patchGrid.innerHTML += '<div class="comp-cell patch">—</div>';
+        kernGrid.innerHTML += '<div class="comp-cell kern">—</div>';
+        prodGrid.innerHTML += '<div class="comp-cell product">—</div>';
+      }
+      return;
+    }
+
+    let sum = 0;
+    const terms = [];
+    for (let kr = 0; kr < kernSize; kr++) {
+      for (let kc = 0; kc < kernSize; kc++) {
+        const pv = getPixel(hoverR + kr, hoverC + kc);
+        const kv = kernel[kr][kc];
+        const prod = pv * kv;
+        sum += prod;
+
+        const pc = document.createElement('div');
+        pc.className = 'comp-cell patch';
+        pc.textContent = pv;
+        patchGrid.appendChild(pc);
+
+        const kc2 = document.createElement('div');
+        kc2.className = 'comp-cell kern';
+        kc2.textContent = kv;
+        kernGrid.appendChild(kc2);
+
+        const prc = document.createElement('div');
+        prc.className = 'comp-cell product';
+        prc.textContent = prod;
+        prodGrid.appendChild(prc);
+
+        terms.push(`${pv}\u00d7${kv}`);
+      }
+    }
+
+    sumEl.textContent = sum;
+    breakdownEl.textContent = terms.join(' + ') + ' = ' + sum;
+  }
+
+  // ---- interaction ----
+  function onHover(imgR, imgC) {
+    // snap to valid kernel positions based on stride
+    const half = Math.floor(kernSize / 2);
+    // top-left of patch in padded image coords
+    let topR = imgR + padding - half;
+    let topC = imgC + padding - half;
+
+    // snap to nearest stride-aligned position
+    topR = Math.round(topR / stride) * stride;
+    topC = Math.round(topC / stride) * stride;
+
+    // clamp to the last stride-aligned position that keeps the kernel in bounds
+    const maxTop = Math.floor((paddedSize() - kernSize) / stride) * stride;
+    topR = Math.max(0, Math.min(topR, maxTop));
+    topC = Math.max(0, Math.min(topC, maxTop));
+
+    if (topR === hoverR && topC === hoverC) return;
+
+    hoverR = topR;
+    hoverC = topC;
+    highlightImage();
+    highlightOutput();
+    updateComputation();
+  }
+
+  function fullUpdate() {
+    buildOutputGrid();
+    highlightImage();
+    highlightOutput();
+    updateComputation();
+  }
+
+  // ---- controls ----
+  document.getElementById('imagePreset').addEventListener('change', e => {
+    image = imagePresets[e.target.value]();
+    buildImageGrid();
+    fullUpdate();
+  });
+
+  document.getElementById('kernelPresets').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-kernel]');
+    if (!btn) return;
+    kernel = makePreset(btn.dataset.kernel, kernSize);
+    document.querySelectorAll('#kernelPresets button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildKernelGrid();
+    fullUpdate();
+  });
+
+  function clearActiveKernelButton() {
+    document.querySelectorAll('#kernelPresets button').forEach(b => b.classList.remove('active'));
+  }
+
+  document.getElementById('kernelSizeSelect').addEventListener('change', e => {
+    kernSize = parseInt(e.target.value);
+    updatePadding();
+    kernel = makePreset('identity', kernSize);
+    document.querySelectorAll('#kernelPresets button').forEach(b => b.classList.remove('active'));
+    document.querySelector('#kernelPresets button[data-kernel="identity"]').classList.add('active');
+    hoverR = -1; hoverC = -1;
+    buildKernelGrid();
+    fullUpdate();
+  });
+
+  document.getElementById('strideInput').addEventListener('change', e => {
+    stride = Math.max(1, parseInt(e.target.value) || 1);
+    hoverR = -1; hoverC = -1;
+    fullUpdate();
+  });
+
+  document.getElementById('paddingCheck').addEventListener('change', e => {
+    usePadding = e.target.checked;
+    updatePadding();
+    hoverR = -1; hoverC = -1;
+    fullUpdate();
+  });
+
+  // reset highlight when mouse leaves image
+  document.getElementById('imageGrid').addEventListener('mouseleave', () => {
+    hoverR = -1; hoverC = -1;
+    highlightImage();
+    highlightOutput();
+    updateComputation();
+  });
+
+  // ---- init ----
+  image = imagePresets.gradient();
+  kernel = makePreset('identity', kernSize);
+  document.querySelector('#kernelPresets button[data-kernel="identity"]').classList.add('active');
+  buildImageGrid();
+  buildKernelGrid();
+  fullUpdate();
+})();
+</script>
+</body>
+</html>

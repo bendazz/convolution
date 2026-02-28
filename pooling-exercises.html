@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max-Pooling Practice Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 900px; margin: 0 auto 1.5rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .problems {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.2rem;
+  }
+
+  .problem .description {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
+
+  .problem-body {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .grid-section { text-align: center; }
+
+  .grid-section h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .grid {
+    display: inline-grid;
+    gap: 2px;
+  }
+
+  .cell {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #334155;
+    color: #e2e8f0;
+  }
+
+  .cell.highlight {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 0 6px rgba(59,130,246,0.4);
+  }
+
+  .cell.is-max {
+    background: #f59e0b;
+    color: #1e293b;
+    box-shadow: 0 0 8px rgba(245,158,11,0.5);
+  }
+
+  .pool-label {
+    display: inline-block;
+    font-size: 0.78rem;
+    color: #c4b5fd;
+    background: #3b1f7e;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .answer-section {
+    align-self: center;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #10b981;
+    margin-bottom: 0.3rem;
+  }
+
+  .answer-breakdown {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Max-Pooling Exercises</h1>
+<p class="subtitle">For each problem, find the maximum value in the highlighted pooling window.</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  const problems = [
+    {
+      title: 'Problem 1 — 2\u00d72 pool, small grid',
+      desc: 'Find the maximum of the four highlighted values.',
+      image: [
+        [ 10, 40, 30, 20],
+        [ 50, 20, 60, 10],
+        [ 30, 70, 40, 80],
+        [ 20, 10, 50, 30]
+      ],
+      poolSize: 2, patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 2 — 2\u00d72 pool, bottom-right',
+      desc: 'Same grid, different window position.',
+      image: [
+        [ 10, 40, 30, 20],
+        [ 50, 20, 60, 10],
+        [ 30, 70, 40, 80],
+        [ 20, 10, 50, 30]
+      ],
+      poolSize: 2, patchR: 2, patchC: 2
+    },
+    {
+      title: 'Problem 3 — 2\u00d72 pool, gradient',
+      desc: 'Values increase left to right. Where is the max?',
+      image: [
+        [  5, 15, 25, 35, 45, 55],
+        [ 10, 20, 30, 40, 50, 60],
+        [ 15, 25, 35, 45, 55, 65],
+        [ 20, 30, 40, 50, 60, 70],
+        [ 25, 35, 45, 55, 65, 75],
+        [ 30, 40, 50, 60, 70, 80]
+      ],
+      poolSize: 2, patchR: 2, patchC: 4
+    },
+    {
+      title: 'Problem 4 — 2\u00d72 pool, uniform region',
+      desc: 'What happens when all values in the window are the same?',
+      image: [
+        [ 50, 50, 50, 50],
+        [ 50,100,100, 50],
+        [ 50,100,100, 50],
+        [ 50, 50, 50, 50]
+      ],
+      poolSize: 2, patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 5 — 2\u00d72 pool, spike detection',
+      desc: 'One very large value among small ones. Max-pooling preserves it.',
+      image: [
+        [  2,  5,  3,  1,  4,  6],
+        [  7,  1,  4,  2,  3,  5],
+        [  3,  6,255,  4,  1,  2],
+        [  1,  4,  2,  8,  5,  3],
+        [  5,  3,  6,  1,  7,  4],
+        [  4,  2,  1,  5,  3,  9]
+      ],
+      poolSize: 2, patchR: 2, patchC: 2
+    },
+    {
+      title: 'Problem 6 — 3\u00d73 pool',
+      desc: 'A larger pooling window. Find the max among 9 values.',
+      image: [
+        [ 12, 45, 78, 23, 56],
+        [ 34, 67, 90, 11, 44],
+        [ 55, 88, 21, 33, 77],
+        [ 66, 10, 43, 99, 22],
+        [ 31, 54, 87, 15, 48]
+      ],
+      poolSize: 3, patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 7 — 3\u00d73 pool, different position',
+      desc: 'Same grid, window shifted to the bottom-right.',
+      image: [
+        [ 12, 45, 78, 23, 56],
+        [ 34, 67, 90, 11, 44],
+        [ 55, 88, 21, 33, 77],
+        [ 66, 10, 43, 99, 22],
+        [ 31, 54, 87, 15, 48]
+      ],
+      poolSize: 3, patchR: 2, patchC: 2
+    },
+    {
+      title: 'Problem 8 — 2\u00d72 pool, negative values',
+      desc: 'Feature maps after convolution can have negative values. Max-pooling still picks the largest.',
+      image: [
+        [-10,  5, -3,  8],
+        [  2, -7,  4, -1],
+        [ -5,  9, -6,  3],
+        [  1, -4,  7, -2]
+      ],
+      poolSize: 2, patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 9 — 2\u00d72 pool, all negative',
+      desc: 'When every value is negative, the max is the least negative.',
+      image: [
+        [ -8, -3, -5, -1],
+        [ -2, -9, -4, -7],
+        [ -6, -1, -3, -5],
+        [ -4, -7, -2, -8]
+      ],
+      poolSize: 2, patchR: 2, patchC: 0
+    },
+    {
+      title: 'Problem 10 — 4\u00d74 pool',
+      desc: 'A large pooling window covers 16 values. Find the maximum.',
+      image: [
+        [ 14, 27,  3, 41, 55, 19, 33, 47],
+        [ 62,  8, 36, 50, 24, 58, 12, 46],
+        [ 21, 45, 69,  7, 43, 17, 51, 25],
+        [ 38, 52, 16, 60, 34,  2, 48, 72],
+        [ 11, 35, 59, 23, 67, 41,  5, 29],
+        [ 44, 18, 42, 76, 10, 54, 28, 63],
+        [ 57, 31, 15, 49, 73, 37, 61,  4],
+        [ 20, 64, 38, 22, 56, 80, 14, 68]
+      ],
+      poolSize: 4, patchR: 4, patchC: 4
+    }
+  ];
+
+  function solve(prob) {
+    const vals = [];
+    let mx = -Infinity;
+    for (let r = 0; r < prob.poolSize; r++)
+      for (let c = 0; c < prob.poolSize; c++) {
+        const v = prob.image[prob.patchR + r][prob.patchC + c];
+        vals.push(v);
+        mx = Math.max(mx, v);
+      }
+    return { mx, vals };
+  }
+
+  const container = document.getElementById('problems');
+
+  problems.forEach((prob, idx) => {
+    const { mx, vals } = solve(prob);
+    const imgRows = prob.image.length;
+    const imgCols = prob.image[0].length;
+
+    // Image grid
+    let imgHTML = '';
+    for (let r = 0; r < imgRows; r++) {
+      for (let c = 0; c < imgCols; c++) {
+        const inPatch = r >= prob.patchR && r < prob.patchR + prob.poolSize &&
+                        c >= prob.patchC && c < prob.patchC + prob.poolSize;
+        let cls = 'cell';
+        if (inPatch) cls += ' highlight';
+        imgHTML += `<div class="${cls}">${prob.image[r][c]}</div>`;
+      }
+    }
+
+    // Window values grid (for answer reveal)
+    let winHTML = '';
+    let maxMarked = false;
+    for (let r = 0; r < prob.poolSize; r++) {
+      for (let c = 0; c < prob.poolSize; c++) {
+        const v = prob.image[prob.patchR + r][prob.patchC + c];
+        let cls = 'cell highlight';
+        if (v === mx && !maxMarked) { cls = 'cell is-max'; maxMarked = true; }
+        winHTML += `<div class="${cls}">${v}</div>`;
+      }
+    }
+
+    const el = document.createElement('div');
+    el.className = 'problem';
+    el.innerHTML = `
+      <h2>${prob.title}</h2>
+      <p class="description">${prob.desc}</p>
+      <div class="problem-body">
+        <div class="grid-section">
+          <h3>Input</h3>
+          <div class="grid" style="grid-template-columns: repeat(${imgCols}, 42px);">
+            ${imgHTML}
+          </div>
+        </div>
+        <div class="grid-section">
+          <span class="pool-label">${prob.poolSize}\u00d7${prob.poolSize} pool</span>
+        </div>
+        <div class="answer-section">
+          <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+          <div class="hidden" id="answer-${idx}">
+            <div class="answer-value">${mx}</div>
+            <div class="grid-section" style="margin-bottom:0.5rem;">
+              <h3>Window Values</h3>
+              <div class="grid" style="grid-template-columns: repeat(${prob.poolSize}, 42px);">
+                ${winHTML}
+              </div>
+            </div>
+            <div class="answer-breakdown">max(${vals.join(', ')}) = ${mx}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    document.getElementById(`answer-${btn.dataset.idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

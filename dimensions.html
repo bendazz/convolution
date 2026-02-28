@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Output Dimension Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 900px; margin: 0 auto 1.5rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .problems {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.6rem;
+  }
+
+  .problem-body {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .given {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .param-box {
+    text-align: center;
+  }
+
+  .param-box .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.3rem;
+  }
+
+  .param-box .value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+    min-width: 80px;
+  }
+
+  .param-box.image .value {
+    background: #1e3a5f;
+    color: #93c5fd;
+  }
+
+  .param-box.kernel .value {
+    background: #3b1f7e;
+    color: #c4b5fd;
+  }
+
+  .arrow {
+    font-size: 1.5rem;
+    color: #475569;
+  }
+
+  .answer-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-box {
+    text-align: center;
+  }
+
+  .answer-box .answer-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #10b981;
+    padding: 0.4rem 1rem;
+    background: #064e3b;
+    border-radius: 8px;
+    display: inline-block;
+    min-width: 80px;
+  }
+
+  .answer-box .answer-work {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    margin-top: 0.35rem;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Output Dimension Exercises</h1>
+<p class="subtitle">Given an input image size and kernel size (stride = 1, no padding), what are the output dimensions?</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  // Each problem: [imageH, imageW, kernelH, kernelW]
+  // Mix of square and rectangular inputs/kernels
+  const problems = [
+    { title: 'Problem 1',  imgH: 5,   imgW: 5,   kH: 3, kW: 3 },
+    { title: 'Problem 2',  imgH: 7,   imgW: 7,   kH: 3, kW: 3 },
+    { title: 'Problem 3',  imgH: 8,   imgW: 8,   kH: 5, kW: 5 },
+    { title: 'Problem 4',  imgH: 10,  imgW: 10,  kH: 3, kW: 3 },
+    { title: 'Problem 5',  imgH: 8,   imgW: 12,  kH: 3, kW: 3 },
+    { title: 'Problem 6',  imgH: 28,  imgW: 28,  kH: 5, kW: 5 },
+    { title: 'Problem 7',  imgH: 15,  imgW: 20,  kH: 5, kW: 5 },
+    { title: 'Problem 8',  imgH: 32,  imgW: 64,  kH: 7, kW: 7 },
+    { title: 'Problem 9',  imgH: 100, imgW: 75,  kH: 3, kW: 3 },
+    { title: 'Problem 10', imgH: 224, imgW: 224, kH: 7, kW: 7 },
+  ];
+
+  const container = document.getElementById('problems');
+
+  problems.forEach((p, idx) => {
+    const outH = p.imgH - p.kH + 1;
+    const outW = p.imgW - p.kW + 1;
+    const isSquare = outH === outW;
+    const workH = `H: (${p.imgH} - ${p.kH}) + 1 = ${outH}`;
+    const workW = `W: (${p.imgW} - ${p.kW}) + 1 = ${outW}`;
+    const workSquare = `(${p.imgH} - ${p.kH}) + 1 = ${outH}`;
+
+    const el = document.createElement('div');
+    el.className = 'problem';
+    el.innerHTML = `
+      <h2>${p.title}</h2>
+      <div class="problem-body">
+        <div class="given">
+          <div class="param-box image">
+            <div class="label">Input Image</div>
+            <div class="value">${p.imgH} &times; ${p.imgW}</div>
+          </div>
+          <div class="param-box kernel">
+            <div class="label">Kernel</div>
+            <div class="value">${p.kH} &times; ${p.kW}</div>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="answer-section">
+          <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+          <div class="answer-box hidden" id="answer-${idx}">
+            <div class="answer-value">${outH} &times; ${outW}</div>
+            ${isSquare
+              ? `<div class="answer-work">${workSquare}</div>`
+              : `<div class="answer-work">${workH}</div><div class="answer-work">${workW}</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    document.getElementById(`answer-${btn.dataset.idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

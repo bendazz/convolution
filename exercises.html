@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convolution Practice Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+  }
+
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .problems {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.2rem;
+  }
+
+  .problem .description {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
+
+  .problem-body {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .grid-section { text-align: center; }
+
+  .grid-section h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .grid {
+    display: inline-grid;
+    gap: 2px;
+  }
+
+  .cell {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #334155;
+    color: #e2e8f0;
+  }
+
+  .cell.highlight {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 0 6px rgba(59,130,246,0.4);
+  }
+
+  .cell.center {
+    background: #f59e0b;
+    color: #1e293b;
+    box-shadow: 0 0 8px rgba(245,158,11,0.5);
+  }
+
+  .cell.kern {
+    background: #4338ca;
+    color: #e0e7ff;
+  }
+
+  .answer-section {
+    align-self: center;
+    text-align: center;
+    min-width: 140px;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #10b981;
+    margin-bottom: 0.3rem;
+  }
+
+  .answer-breakdown {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+    max-width: 340px;
+  }
+
+  .answer-detail { margin-top: 0.8rem; }
+
+  .answer-detail h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .product-grid .cell {
+    background: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #334155;
+    font-size: 0.72rem;
+    width: 42px;
+    height: 34px;
+  }
+
+  .hidden { display: none; }
+
+  .score-bar {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Practice Exercises</h1>
+<p class="subtitle">For each problem, compute the convolution output at the highlighted position. Then reveal the answer to check your work.</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  // ---- Problem definitions ----
+  // Each problem: { title, desc, image (2D), kernel (2D), patchR, patchC }
+  // patchR/patchC = top-left row/col of the kernel overlay on the image
+
+  const problems = [
+    {
+      title: 'Problem 1 — Warm-up (1×1 kernel)',
+      desc: 'A 1×1 kernel simply scales a single pixel. What is the output?',
+      image: [
+        [10, 20, 30, 40, 50],
+        [15, 25, 35, 45, 55],
+        [20, 30, 40, 50, 60],
+        [25, 35, 45, 55, 65],
+        [30, 40, 50, 60, 70]
+      ],
+      kernel: [[3]],
+      patchR: 2, patchC: 2
+    },
+    {
+      title: 'Problem 2 — Another 1×1',
+      desc: 'This time the kernel weight is negative. What happens?',
+      image: [
+        [100, 150, 200],
+        [120, 180, 210],
+        [130, 160, 190]
+      ],
+      kernel: [[-1]],
+      patchR: 0, patchC: 2
+    },
+    {
+      title: 'Problem 3 — Identity kernel (3×3)',
+      desc: 'The identity kernel passes through the center pixel unchanged.',
+      image: [
+        [ 5, 10, 15, 20, 25],
+        [10, 20, 30, 40, 50],
+        [15, 30, 45, 60, 75],
+        [20, 40, 60, 80,100],
+        [25, 50, 75,100,125]
+      ],
+      kernel: [[0,0,0],[0,1,0],[0,0,0]],
+      patchR: 1, patchC: 1
+    },
+    {
+      title: 'Problem 4 — Simple sum kernel (3×3)',
+      desc: 'All kernel weights are 1. Compute the sum of the highlighted patch.',
+      image: [
+        [ 1,  2,  3,  4,  5],
+        [ 6,  7,  8,  9, 10],
+        [11, 12, 13, 14, 15],
+        [16, 17, 18, 19, 20],
+        [21, 22, 23, 24, 25]
+      ],
+      kernel: [[1,1,1],[1,1,1],[1,1,1]],
+      patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 5 — Edge detection (3×3)',
+      desc: 'This Laplacian kernel highlights differences from the center pixel.',
+      image: [
+        [ 50,  50,  50,  50,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50,  50,  50,  50,  50]
+      ],
+      kernel: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]],
+      patchR: 0, patchC: 0
+    },
+    {
+      title: 'Problem 6 — Edge detection at a boundary',
+      desc: 'Same edge kernel, but now centered on a transition between light and dark.',
+      image: [
+        [ 50,  50,  50,  50,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50, 200, 200, 200,  50],
+        [ 50,  50,  50,  50,  50]
+      ],
+      kernel: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]],
+      patchR: 0, patchC: 1
+    },
+    {
+      title: 'Problem 7 — Sharpen kernel (3×3)',
+      desc: 'The sharpen kernel boosts the center and subtracts cardinal neighbors.',
+      image: [
+        [10, 20, 10, 20, 10],
+        [20, 40, 80, 40, 20],
+        [10, 80,160, 80, 10],
+        [20, 40, 80, 40, 20],
+        [10, 20, 10, 20, 10]
+      ],
+      kernel: [[0,-1,0],[-1,5,-1],[0,-1,0]],
+      patchR: 1, patchC: 1
+    },
+    {
+      title: 'Problem 8 — Emboss kernel (3×3)',
+      desc: 'Emboss kernels create a sense of depth by emphasizing directional gradients.',
+      image: [
+        [  0,  0,  0,  0,  0],
+        [  0, 50,100,150,  0],
+        [  0,100,150,200,  0],
+        [  0,150,200,250,  0],
+        [  0,  0,  0,  0,  0]
+      ],
+      kernel: [[-2,-1,0],[-1,1,1],[0,1,2]],
+      patchR: 1, patchC: 1
+    },
+    {
+      title: 'Problem 9 — Larger kernel (5×5 blur)',
+      desc: 'A 5×5 box of ones. Sum all 25 values in the highlighted region.',
+      image: [
+        [ 1,  1,  1,  1,  1,  1,  1],
+        [ 1,  2,  2,  2,  2,  2,  1],
+        [ 1,  2,  4,  4,  4,  2,  1],
+        [ 1,  2,  4,  8,  4,  2,  1],
+        [ 1,  2,  4,  4,  4,  2,  1],
+        [ 1,  2,  2,  2,  2,  2,  1],
+        [ 1,  1,  1,  1,  1,  1,  1]
+      ],
+      kernel: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]],
+      patchR: 1, patchC: 1
+    },
+    {
+      title: 'Problem 10 — 5×5 edge detection',
+      desc: 'A 5×5 Laplacian. All outer weights are -1, center is 24.',
+      image: [
+        [  0,  0,  0,  0,  0,  0,  0],
+        [  0,  0,  0,  0,  0,  0,  0],
+        [  0,  0,100,100,100,  0,  0],
+        [  0,  0,100,100,100,  0,  0],
+        [  0,  0,100,100,100,  0,  0],
+        [  0,  0,  0,  0,  0,  0,  0],
+        [  0,  0,  0,  0,  0,  0,  0]
+      ],
+      kernel: (function() {
+        const k = Array.from({length:5}, () => Array(5).fill(-1));
+        k[2][2] = 24;
+        return k;
+      })(),
+      patchR: 1, patchC: 1
+    }
+  ];
+
+  // ---- Compute answer for a problem ----
+  function solve(prob) {
+    const kRows = prob.kernel.length;
+    const kCols = prob.kernel[0].length;
+    let sum = 0;
+    const products = [];
+    const terms = [];
+    for (let r = 0; r < kRows; r++) {
+      const prodRow = [];
+      for (let c = 0; c < kCols; c++) {
+        const iv = prob.image[prob.patchR + r][prob.patchC + c];
+        const kv = prob.kernel[r][c];
+        const p = iv * kv;
+        sum += p;
+        prodRow.push(p);
+        terms.push(`${iv}\u00d7${kv}`);
+      }
+      products.push(prodRow);
+    }
+    return { sum, products, terms };
+  }
+
+  // ---- Render ----
+  const container = document.getElementById('problems');
+
+  problems.forEach((prob, idx) => {
+    const { sum, products, terms } = solve(prob);
+    const kRows = prob.kernel.length;
+    const kCols = prob.kernel[0].length;
+    const imgRows = prob.image.length;
+    const imgCols = prob.image[0].length;
+    const half = Math.floor(kRows / 2);
+
+    // Build image grid HTML
+    let imgHTML = '';
+    for (let r = 0; r < imgRows; r++) {
+      for (let c = 0; c < imgCols; c++) {
+        const inPatch = r >= prob.patchR && r < prob.patchR + kRows &&
+                        c >= prob.patchC && c < prob.patchC + kCols;
+        const isCenter = r === prob.patchR + half && c === prob.patchC + half;
+        let cls = 'cell';
+        if (isCenter) cls += ' center';
+        else if (inPatch) cls += ' highlight';
+        imgHTML += `<div class="${cls}">${prob.image[r][c]}</div>`;
+      }
+    }
+
+    // Build kernel grid HTML
+    let kernHTML = '';
+    for (let r = 0; r < kRows; r++)
+      for (let c = 0; c < kCols; c++)
+        kernHTML += `<div class="cell kern">${prob.kernel[r][c]}</div>`;
+
+    // Build product grid HTML
+    let prodHTML = '';
+    for (let r = 0; r < kRows; r++)
+      for (let c = 0; c < kCols; c++)
+        prodHTML += `<div class="cell">${products[r][c]}</div>`;
+
+    const problemEl = document.createElement('div');
+    problemEl.className = 'problem';
+    problemEl.innerHTML = `
+      <h2>${prob.title}</h2>
+      <p class="description">${prob.desc}</p>
+      <div class="problem-body">
+        <div class="grid-section">
+          <h3>Input Image</h3>
+          <div class="grid" style="grid-template-columns: repeat(${imgCols}, 42px);">
+            ${imgHTML}
+          </div>
+        </div>
+        <div class="grid-section">
+          <h3>Kernel</h3>
+          <div class="grid" style="grid-template-columns: repeat(${kCols}, 42px);">
+            ${kernHTML}
+          </div>
+        </div>
+        <div class="answer-section">
+          <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+          <div class="hidden" id="answer-${idx}">
+            <div class="answer-value">${sum}</div>
+            <div class="answer-detail">
+              <h3>Element-wise Products</h3>
+              <div class="grid product-grid" style="grid-template-columns: repeat(${kCols}, 42px);">
+                ${prodHTML}
+              </div>
+            </div>
+            <div class="answer-breakdown">${terms.join(' + ')} = ${sum}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(problemEl);
+  });
+
+  // Reveal buttons
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    const idx = btn.dataset.idx;
+    document.getElementById(`answer-${idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convolution Learning Hub</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: #94a3b8;
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .cards {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    width: 300px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: #6366f1;
+    box-shadow: 0 8px 30px rgba(99,102,241,0.15);
+  }
+
+  .card h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.6rem;
+  }
+
+  .card p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .card .icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+
+  .card-demo .icon { color: #3b82f6; }
+  .card-exercises .icon { color: #10b981; }
+  .card-dimensions .icon { color: #f59e0b; }
+  .card-pooling .icon { color: #ec4899; }
+  .card-pool-ex .icon { color: #14b8a6; }
+  .card-pool-dim .icon { color: #a78bfa; }
+  .card-pipeline .icon { color: #fb923c; }
+</style>
+</head>
+<body>
+  <h1>Convolution Learning Hub</h1>
+  <p class="subtitle">Interactive tools for understanding convolutional neural networks</p>
+  <div class="cards">
+    <a class="card card-demo" href="demo.html">
+      <span class="icon">&#9881;</span>
+      <h2>Interactive Demo</h2>
+      <p>Explore how convolution works by sliding kernels over an image and watching the math unfold step by step.</p>
+    </a>
+    <a class="card card-exercises" href="exercises.html">
+      <span class="icon">&#9998;</span>
+      <h2>Convolution Exercises</h2>
+      <p>Test your understanding with 10 hand-picked problems. Compute the convolution output, then reveal the answer.</p>
+    </a>
+    <a class="card card-dimensions" href="dimensions.html">
+      <span class="icon">&#9638;</span>
+      <h2>Output Dimensions</h2>
+      <p>Given input and kernel sizes, predict the output dimensions. 10 problems to master the formula.</p>
+    </a>
+    <a class="card card-pooling" href="pooling.html">
+      <span class="icon">&#9707;</span>
+      <h2>Max-Pooling Demo</h2>
+      <p>See how max-pooling downsamples feature maps by selecting the maximum value in each window.</p>
+    </a>
+    <a class="card card-pool-ex" href="pooling-exercises.html">
+      <span class="icon">&#9998;</span>
+      <h2>Pooling Exercises</h2>
+      <p>10 problems: find the max-pool output at a highlighted window position.</p>
+    </a>
+    <a class="card card-pool-dim" href="pooling-dimensions.html">
+      <span class="icon">&#9638;</span>
+      <h2>Pooling Dimensions</h2>
+      <p>Given input size, pool size, and stride, predict the output dimensions.</p>
+    </a>
+    <a class="card card-pipeline" href="pipeline-dimensions.html">
+      <span class="icon">&#9654;</span>
+      <h2>Conv + Pool Pipeline</h2>
+      <p>Track dimensions through a convolution followed by max-pooling. The full CNN building block.</p>
+    </a>
+  </div>
+</body>
+</html>

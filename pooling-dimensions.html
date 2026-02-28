@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max-Pooling Output Dimension Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 900px; margin: 0 auto 1.5rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .problems {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.6rem;
+  }
+
+  .problem-body {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .given {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .param-box { text-align: center; }
+
+  .param-box .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.3rem;
+  }
+
+  .param-box .value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    display: inline-block;
+    min-width: 70px;
+  }
+
+  .param-box.input-size .value { background: #1e3a5f; color: #93c5fd; }
+  .param-box.pool-size .value  { background: #3b1f7e; color: #c4b5fd; }
+  .param-box.stride .value     { background: #4a1d42; color: #f9a8d4; }
+
+  .arrow {
+    font-size: 1.5rem;
+    color: #475569;
+  }
+
+  .answer-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-box { text-align: center; }
+
+  .answer-box .answer-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #10b981;
+    padding: 0.4rem 0.9rem;
+    background: #064e3b;
+    border-radius: 8px;
+    display: inline-block;
+    min-width: 70px;
+  }
+
+  .answer-box .answer-work {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    margin-top: 0.35rem;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Max-Pooling Dimension Exercises</h1>
+<p class="subtitle">Given input size and pool size (stride = pool size, no padding), what are the output dimensions?</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  const problems = [
+    { title: 'Problem 1',  imgH: 4,   imgW: 4,   pool: 2, stride: 2 },
+    { title: 'Problem 2',  imgH: 8,   imgW: 8,   pool: 2, stride: 2 },
+    { title: 'Problem 3',  imgH: 6,   imgW: 6,   pool: 2, stride: 2 },
+    { title: 'Problem 4',  imgH: 10,  imgW: 10,  pool: 2, stride: 2 },
+    { title: 'Problem 5',  imgH: 6,   imgW: 6,   pool: 3, stride: 3 },
+    { title: 'Problem 6',  imgH: 16,  imgW: 24,  pool: 2, stride: 2 },
+    { title: 'Problem 7',  imgH: 9,   imgW: 9,   pool: 3, stride: 3 },
+    { title: 'Problem 8',  imgH: 32,  imgW: 32,  pool: 2, stride: 2 },
+    { title: 'Problem 9',  imgH: 24,  imgW: 56,  pool: 2, stride: 2 },
+    { title: 'Problem 10', imgH: 112, imgW: 112, pool: 4, stride: 4 },
+  ];
+
+  const container = document.getElementById('problems');
+
+  problems.forEach((p, idx) => {
+    const outH = Math.floor((p.imgH - p.pool) / p.stride) + 1;
+    const outW = Math.floor((p.imgW - p.pool) / p.stride) + 1;
+    const isSquare = outH === outW;
+
+    const workH = `H: \u230A(${p.imgH} - ${p.pool}) / ${p.stride}\u230B + 1 = ${outH}`;
+    const workW = `W: \u230A(${p.imgW} - ${p.pool}) / ${p.stride}\u230B + 1 = ${outW}`;
+    const workSquare = `\u230A(${p.imgH} - ${p.pool}) / ${p.stride}\u230B + 1 = ${outH}`;
+
+    const el = document.createElement('div');
+    el.className = 'problem';
+    el.innerHTML = `
+      <h2>${p.title}</h2>
+      <div class="problem-body">
+        <div class="given">
+          <div class="param-box input-size">
+            <div class="label">Input</div>
+            <div class="value">${p.imgH} &times; ${p.imgW}</div>
+          </div>
+          <div class="param-box pool-size">
+            <div class="label">Pool</div>
+            <div class="value">${p.pool} &times; ${p.pool}</div>
+          </div>
+          <div class="param-box stride">
+            <div class="label">Stride</div>
+            <div class="value">${p.stride}</div>
+          </div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="answer-section">
+          <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+          <div class="answer-box hidden" id="answer-${idx}">
+            <div class="answer-value">${outH} &times; ${outW}</div>
+            ${isSquare
+              ? `<div class="answer-work">${workSquare}</div>`
+              : `<div class="answer-work">${workH}</div><div class="answer-work">${workW}</div>`}
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    document.getElementById(`answer-${btn.dataset.idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>
