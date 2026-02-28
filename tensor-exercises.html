@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tensor Shape Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 960px; margin: 0 auto 1.5rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  .problems {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.5rem;
+  }
+
+  .pipeline {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+  }
+
+  .stage {
+    text-align: center;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .stage .stage-label {
+    font-size: 0.62rem;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+
+  .stage.input   { background: #1e3a5f; color: #93c5fd; }
+  .stage.conv    { background: #3b1f7e; color: #c4b5fd; }
+  .stage.pool    { background: #4a1d42; color: #f9a8d4; }
+  .stage.output  { background: #064e3b; color: #6ee7b7; }
+
+  .arrow {
+    color: #475569;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .answer-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-box { text-align: left; }
+
+  .answer-box .final-shape {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #10b981;
+    padding: 0.35rem 0.8rem;
+    background: #064e3b;
+    border-radius: 8px;
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+  }
+
+  .answer-box .work-steps {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+  }
+
+  .answer-box .work-steps .step-label {
+    color: #64748b;
+  }
+
+  .answer-box .work-steps .step-result {
+    color: #fbbf24;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Tensor Shape Exercises</h1>
+<p class="subtitle">
+  Each problem describes a tensor flowing through one or more conv and pool layers.<br>
+  Convolution uses stride 1, no padding unless noted. Pooling stride = pool size.<br>
+  What is the final output tensor shape (H &times; W &times; channels)?
+</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  // Each problem is a pipeline of stages.
+  // Stage types: { type:'conv', kern, filters } or { type:'pool', size }
+  // Conv: stride 1, no padding (unless padded:true -> "same" padding)
+  // Pool: stride = pool size
+  const problems = [
+    {
+      title: 'Problem 1 — Single conv layer',
+      inputH: 28, inputW: 28, inputC: 1,
+      stages: [
+        { type: 'conv', kern: 3, filters: 8 }
+      ]
+    },
+    {
+      title: 'Problem 2 — Conv then pool',
+      inputH: 28, inputW: 28, inputC: 1,
+      stages: [
+        { type: 'conv', kern: 5, filters: 6 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 3 — RGB input, conv + pool',
+      inputH: 32, inputW: 32, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 3, filters: 16 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 4 — Two conv layers',
+      inputH: 28, inputW: 28, inputC: 1,
+      stages: [
+        { type: 'conv', kern: 3, filters: 8 },
+        { type: 'conv', kern: 3, filters: 16 }
+      ]
+    },
+    {
+      title: 'Problem 5 — Two conv + pool blocks',
+      inputH: 32, inputW: 32, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 3, filters: 16 },
+        { type: 'pool', size: 2 },
+        { type: 'conv', kern: 3, filters: 32 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 6 — Large kernel on RGB',
+      inputH: 64, inputW: 64, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 7, filters: 32 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 7 — 1\u00d71 convolution',
+      inputH: 16, inputW: 16, inputC: 32,
+      stages: [
+        { type: 'conv', kern: 1, filters: 64 }
+      ]
+    },
+    {
+      title: 'Problem 8 — Three conv + pool blocks',
+      inputH: 32, inputW: 32, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 3, filters: 16 },
+        { type: 'pool', size: 2 },
+        { type: 'conv', kern: 3, filters: 32 },
+        { type: 'pool', size: 2 },
+        { type: 'conv', kern: 3, filters: 64 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 9 — Non-square input',
+      inputH: 48, inputW: 64, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 5, filters: 16 },
+        { type: 'pool', size: 2 },
+        { type: 'conv', kern: 3, filters: 32 },
+        { type: 'pool', size: 2 }
+      ]
+    },
+    {
+      title: 'Problem 10 — ImageNet-style first block',
+      inputH: 224, inputW: 224, inputC: 3,
+      stages: [
+        { type: 'conv', kern: 7, filters: 64 },
+        { type: 'pool', size: 2 },
+        { type: 'conv', kern: 3, filters: 128 },
+        { type: 'pool', size: 2 }
+      ]
+    }
+  ];
+
+  function solve(prob) {
+    let h = prob.inputH, w = prob.inputW, c = prob.inputC;
+    const steps = [];
+    steps.push({ label: 'Input', h, w, c });
+
+    for (const stage of prob.stages) {
+      if (stage.type === 'conv') {
+        h = h - stage.kern + 1;
+        w = w - stage.kern + 1;
+        c = stage.filters;
+        steps.push({ label: `Conv ${stage.kern}\u00d7${stage.kern}, ${stage.filters}f`, h, w, c });
+      } else if (stage.type === 'pool') {
+        h = Math.floor(h / stage.size);
+        w = Math.floor(w / stage.size);
+        steps.push({ label: `Pool ${stage.size}\u00d7${stage.size}`, h, w, c });
+      }
+    }
+    return { h, w, c, steps };
+  }
+
+  const container = document.getElementById('problems');
+
+  problems.forEach((prob, idx) => {
+    const result = solve(prob);
+
+    // Build pipeline visualization
+    let pipeHTML = '';
+    pipeHTML += `<div class="stage input"><span class="stage-label">Input</span>${prob.inputH}&times;${prob.inputW}&times;${prob.inputC}</div>`;
+
+    for (const stage of prob.stages) {
+      pipeHTML += '<span class="arrow">&rarr;</span>';
+      if (stage.type === 'conv') {
+        pipeHTML += `<div class="stage conv"><span class="stage-label">Conv</span>${stage.kern}&times;${stage.kern}, ${stage.filters} filters</div>`;
+      } else {
+        pipeHTML += `<div class="stage pool"><span class="stage-label">Max Pool</span>${stage.size}&times;${stage.size}</div>`;
+      }
+    }
+
+    pipeHTML += '<span class="arrow">&rarr;</span>';
+    pipeHTML += '<div class="stage output"><span class="stage-label">Output</span>? &times; ? &times; ?</div>';
+
+    // Build work steps for the reveal
+    let workHTML = '';
+    for (let i = 1; i < result.steps.length; i++) {
+      const s = result.steps[i];
+      const prev = result.steps[i - 1];
+      workHTML += `<div><span class="step-label">${s.label}:</span> <span class="step-result">${prev.h}&times;${prev.w}&times;${prev.c} &rarr; ${s.h}&times;${s.w}&times;${s.c}</span></div>`;
+    }
+
+    const el = document.createElement('div');
+    el.className = 'problem';
+    el.innerHTML = `
+      <h2>${prob.title}</h2>
+      <div class="pipeline">${pipeHTML}</div>
+      <div class="answer-area">
+        <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+        <div class="answer-box hidden" id="answer-${idx}">
+          <span class="final-shape">${result.h} &times; ${result.w} &times; ${result.c}</span>
+          <div class="work-steps">${workHTML}</div>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    document.getElementById(`answer-${btn.dataset.idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>
