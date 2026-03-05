@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flatten to Fully-Connected Layer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { max-width: 1100px; margin: 0 auto 0.8rem; }
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.92rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .app {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  /* ---------- controls ---------- */
+  .controls-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1.8rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ctrl-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .ctrl-group label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  .ctrl-group select {
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+  }
+
+  .ctrl-group input[type="range"] {
+    accent-color: #6366f1;
+    width: 120px;
+  }
+
+  .ctrl-group .range-val {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    min-width: 1.5em;
+    text-align: center;
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* ---------- diagram ---------- */
+  .diagram-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    min-height: 320px;
+    padding: 1rem 0;
+    position: relative;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .stage-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+  }
+
+  .stage-dims {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* 3D tensor block */
+  .tensor-block {
+    position: relative;
+    perspective: 600px;
+  }
+
+  .tensor-stack {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(-10deg) rotateY(20deg);
+  }
+
+  .tensor-slice {
+    position: absolute;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+
+  /* flow arrow */
+  .flow-arrow {
+    font-size: 1.8rem;
+    color: #475569;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .flow-arrow .arrow-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  /* 1D vector column */
+  .vector-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .vector-cell {
+    width: 28px;
+    height: 8px;
+    border-radius: 1px;
+    transition: opacity 0.15s;
+  }
+
+  .vector-cell.highlighted {
+    outline: 1px solid #f59e0b;
+    z-index: 2;
+  }
+
+  .vector-ellipsis {
+    font-size: 0.7rem;
+    color: #64748b;
+    padding: 2px 0;
+    letter-spacing: 0.15em;
+  }
+
+  /* FC section with SVG */
+  .fc-section {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    flex-shrink: 0;
+  }
+
+  .fc-svg {
+    display: block;
+  }
+
+  .fc-neurons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fc-neuron {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #6366f1;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #a5b4fc;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .fc-neuron:hover, .fc-neuron.active {
+    background: #312e81;
+    border-color: #818cf8;
+    box-shadow: 0 0 10px rgba(99,102,241,0.4);
+  }
+
+  /* ---------- summary ---------- */
+  .summary-panel {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .summary-line {
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    color: #e2e8f0;
+    margin-bottom: 0.4rem;
+    line-height: 1.6;
+  }
+
+  .summary-line .hl-tensor { color: #93c5fd; font-weight: 700; }
+  .summary-line .hl-flat   { color: #fbbf24; font-weight: 700; }
+  .summary-line .hl-fc     { color: #a78bfa; font-weight: 700; }
+
+  .param-count {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 0.3rem;
+  }
+
+  .param-count strong {
+    color: #fbbf24;
+    font-weight: 700;
+  }
+
+  .comparison {
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .comparison em {
+    color: #f87171;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* ---------- teaching ---------- */
+  .teaching-row {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .callout {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .callout h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+  }
+
+  .callout p {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 800px) {
+    .diagram { flex-direction: column; gap: 1.2rem; min-height: auto; }
+    .flow-arrow { transform: rotate(90deg); }
+    .fc-section { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Flatten to Fully-Connected Layer</h1>
+<p class="subtitle">See how a 3D feature tensor is reshaped into a 1D vector and wired to every neuron in a dense layer.</p>
+
+<div class="app">
+
+  <!-- Controls -->
+  <div class="controls-panel">
+    <div class="ctrl-group">
+      <label>Tensor Height</label>
+      <select id="tensorH">
+        <option>2</option>
+        <option selected>4</option>
+        <option>7</option>
+        <option>8</option>
+        <option>14</option>
+        <option>16</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Tensor Width</label>
+      <select id="tensorW">
+        <option>2</option>
+        <option selected>4</option>
+        <option>7</option>
+        <option>8</option>
+        <option>14</option>
+        <option>16</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Channels (C)</label>
+      <div class="ctrl-row">
+        <input type="range" id="channels" min="1" max="16" value="4">
+        <span class="range-val" id="channelsVal">4</span>
+      </div>
+    </div>
+    <div style="width:1px;height:2rem;background:#334155;"></div>
+    <div class="ctrl-group">
+      <label>FC Neurons</label>
+      <div class="ctrl-row">
+        <input type="range" id="fcNeurons" min="2" max="16" value="4">
+        <span class="range-val" id="fcNeuronsVal">4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diagram -->
+  <div class="diagram-panel">
+    <div class="diagram" id="diagram"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-panel">
+    <div class="summary-line" id="summaryLine"></div>
+    <div class="param-count" id="paramCount"></div>
+    <div class="comparison" id="comparison"></div>
+  </div>
+
+  <!-- Teaching callouts -->
+  <div class="teaching-row">
+    <div class="callout">
+      <h2>What is Flattening?</h2>
+      <p>The output of the last conv/pool block is a 3D tensor (height &times; width &times; channels). A fully-connected layer expects a 1D vector, so we <strong style="color:#fbbf24;">flatten</strong> &mdash; reshape the 3D block into a single row of numbers by concatenating every value from every channel end-to-end. All information is preserved; only the spatial structure is discarded.</p>
+    </div>
+    <div class="callout">
+      <h2>Why So Many Parameters?</h2>
+      <p>Each FC neuron has one weight for <em style="color:#f87171;">every</em> element of the flattened vector, plus a bias. With a 4&times;4&times;8 tensor (128 values) and 64 neurons, that is 128&times;64 + 64 = <strong style="color:#fbbf24;">8,256</strong> parameters &mdash; just for one layer. This is why CNNs use pooling and strided convolutions to shrink the tensor before flattening: smaller tensors mean dramatically fewer FC parameters.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ---- color palette (matches conv-layer.html) ----
+  const channelPalette = [
+    'rgba(251,191,36,0.7)',  'rgba(168,85,247,0.7)',  'rgba(236,72,153,0.7)',
+    'rgba(20,184,166,0.7)',  'rgba(249,115,22,0.7)',  'rgba(99,102,241,0.7)',
+    'rgba(234,179,8,0.7)',   'rgba(14,165,233,0.7)',  'rgba(244,63,94,0.7)',
+    'rgba(34,197,94,0.7)',   'rgba(217,70,239,0.7)',  'rgba(251,146,60,0.7)',
+    'rgba(56,189,248,0.7)',  'rgba(163,230,53,0.7)',  'rgba(232,121,249,0.7)',
+    'rgba(45,212,191,0.7)'
+  ];
+
+  const channelPaletteSolid = [
+    '#fbbf24', '#a855f7', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+    '#eab308', '#0ea5e9', '#f43f5e', '#22c55e', '#d946ef', '#fb923c',
+    '#38bdf8', '#a3e635', '#e879f9', '#2dd4bf'
+  ];
+
+  // ---- state ----
+  function getState() {
+    const H = parseInt(document.getElementById('tensorH').value);
+    const W = parseInt(document.getElementById('tensorW').value);
+    const C = parseInt(document.getElementById('channels').value);
+    const N = parseInt(document.getElementById('fcNeurons').value);
+    const flatLen = H * W * C;
+    return { H, W, C, N, flatLen };
+  }
+
+  // ---- build 3D tensor stack (same pattern as conv-layer.html) ----
+  function buildStack(sliceW, sliceH, depth, colors, offsetPerSlice) {
+    const off = offsetPerSlice || 6;
+    const totalW = sliceW + (depth - 1) * off;
+    const totalH = sliceH + (depth - 1) * off;
+
+    const container = document.createElement('div');
+    container.className = 'tensor-stack';
+    container.style.width = totalW + 'px';
+    container.style.height = totalH + 'px';
+    container.style.position = 'relative';
+
+    for (let i = 0; i < depth; i++) {
+      const slice = document.createElement('div');
+      slice.className = 'tensor-slice';
+      slice.style.width = sliceW + 'px';
+      slice.style.height = sliceH + 'px';
+      slice.style.left = (i * off) + 'px';
+      slice.style.top = ((depth - 1 - i) * off) + 'px';
+      slice.style.zIndex = i;
+      slice.style.background = colors[i % colors.length];
+      if (depth <= 6) {
+        slice.textContent = 'ch' + (i + 1);
+      }
+      container.appendChild(slice);
+    }
+
+    return { el: container, totalW, totalH };
+  }
+
+  // ---- render ----
+  // Track vector cell positions and neuron positions for SVG lines
+  let vectorCellPositions = []; // { y, channelIdx, vectorIdx }
+  let neuronPositions = [];     // { y }
+  let highlightedNeuron = -1;
+  let highlightedCell = -1;
+
+  function render() {
+    const s = getState();
+    const diagram = document.getElementById('diagram');
+    diagram.innerHTML = '';
+
+    // --- Colors for this channel count ---
+    const colors = [];
+    for (let i = 0; i < s.C; i++) colors.push(channelPalette[i % channelPalette.length]);
+
+    // --- 1. 3D Tensor Block ---
+    const maxSpatial = Math.max(s.H, s.W);
+    const scale = Math.min(120 / maxSpatial, 16);
+    const minPx = 32;
+    const sliceW = Math.max(minPx, Math.round(s.W * scale));
+    const sliceH = Math.max(minPx, Math.round(s.H * scale));
+    const depthOff = s.C <= 4 ? 10 : s.C <= 8 ? 7 : 5;
+
+    const stack = buildStack(sliceW, sliceH, s.C, colors, depthOff);
+
+    const tensorStage = document.createElement('div');
+    tensorStage.className = 'stage';
+    tensorStage.innerHTML = '<span class="stage-label">Final Tensor</span>';
+    const tensorBlock = document.createElement('div');
+    tensorBlock.className = 'tensor-block';
+    tensorBlock.style.width = stack.totalW + 'px';
+    tensorBlock.style.height = stack.totalH + 'px';
+    tensorBlock.appendChild(stack.el);
+    tensorStage.appendChild(tensorBlock);
+    tensorStage.innerHTML += `<span class="stage-dims">${s.H} &times; ${s.W} &times; ${s.C}</span>`;
+    diagram.appendChild(tensorStage);
+
+    // --- 2. Flatten Arrow ---
+    const flatArrow = document.createElement('div');
+    flatArrow.className = 'flow-arrow';
+    flatArrow.innerHTML = `<span class="arrow-label">Flatten</span>&rarr;<span class="arrow-label">${s.flatLen} values</span>`;
+    diagram.appendChild(flatArrow);
+
+    // --- 3. 1D Vector Column ---
+    const maxVisibleCells = 60;
+    const showEllipsis = s.flatLen > maxVisibleCells;
+    const topCells = showEllipsis ? 36 : s.flatLen;
+    const bottomCells = showEllipsis ? 12 : 0;
+    const totalVisible = topCells + bottomCells;
+
+    const vectorStage = document.createElement('div');
+    vectorStage.className = 'stage';
+    vectorStage.innerHTML = '<span class="stage-label">Flattened Vector</span>';
+
+    const vecCol = document.createElement('div');
+    vecCol.className = 'vector-column';
+
+    vectorCellPositions = [];
+
+    // Top cells
+    for (let i = 0; i < topCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'vector-cell';
+      const chIdx = Math.floor(i / (s.H * s.W));
+      cell.style.background = channelPalette[chIdx % channelPalette.length];
+      cell.dataset.idx = i;
+      cell.addEventListener('mouseenter', () => { highlightedCell = i; updateHighlights(); });
+      cell.addEventListener('mouseleave', () => { highlightedCell = -1; updateHighlights(); });
+      vecCol.appendChild(cell);
+      vectorCellPositions.push({ idx: i, chIdx });
+    }
+
+    // Ellipsis
+    if (showEllipsis) {
+      const ell = document.createElement('div');
+      ell.className = 'vector-ellipsis';
+      ell.textContent = '\u22ee';
+      vecCol.appendChild(ell);
+
+      // Bottom cells
+      for (let i = s.flatLen - bottomCells; i < s.flatLen; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'vector-cell';
+        const chIdx = Math.floor(i / (s.H * s.W));
+        cell.style.background = channelPalette[chIdx % channelPalette.length];
+        cell.dataset.idx = i;
+        cell.addEventListener('mouseenter', () => { highlightedCell = i; updateHighlights(); });
+        cell.addEventListener('mouseleave', () => { highlightedCell = -1; updateHighlights(); });
+        vecCol.appendChild(cell);
+        vectorCellPositions.push({ idx: i, chIdx });
+      }
+    }
+
+    vectorStage.appendChild(vecCol);
+    vectorStage.innerHTML += `<span class="stage-dims">${s.flatLen} &times; 1</span>`;
+    diagram.appendChild(vectorStage);
+
+    // --- 4. FC Connections (SVG) + Neurons ---
+    const fcSection = document.createElement('div');
+    fcSection.className = 'fc-section';
+
+    // Calculate heights
+    const cellHeight = 9; // 8px cell + 1px gap
+    const ellipsisHeight = showEllipsis ? 18 : 0;
+    const vecHeight = topCells * cellHeight + ellipsisHeight + bottomCells * cellHeight;
+    const neuronGap = 36; // 30px neuron + 6px gap
+    const neuronTotalH = s.N * neuronGap;
+
+    // SVG for connection lines
+    const svgW = 100;
+    const svgH = Math.max(vecHeight, neuronTotalH) + 20;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', svgW);
+    svg.setAttribute('height', svgH);
+    svg.setAttribute('class', 'fc-svg');
+    svg.setAttribute('id', 'fcSvg');
+
+    // We'll position vector cells relative to SVG top
+    const vecOffsetY = (svgH - (topCells * cellHeight + ellipsisHeight + bottomCells * cellHeight)) / 2;
+    const neuronOffsetY = (svgH - neuronTotalH) / 2;
+
+    neuronPositions = [];
+
+    // Draw connection lines: sample if too many
+    const maxLines = 300;
+    const sampleRate = Math.max(1, Math.floor(totalVisible * s.N / maxLines));
+
+    for (let vi = 0; vi < vectorCellPositions.length; vi++) {
+      let cellY;
+      if (vi < topCells) {
+        cellY = vecOffsetY + vi * cellHeight + cellHeight / 2;
+      } else {
+        cellY = vecOffsetY + topCells * cellHeight + ellipsisHeight + (vi - topCells) * cellHeight + cellHeight / 2;
+      }
+      vectorCellPositions[vi].y = cellY;
+
+      for (let ni = 0; ni < s.N; ni++) {
+        if ((vi * s.N + ni) % sampleRate !== 0) continue;
+        const neuronY = neuronOffsetY + ni * neuronGap + 15;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', cellY);
+        line.setAttribute('x2', svgW);
+        line.setAttribute('y2', neuronY);
+        line.setAttribute('stroke', 'rgba(99,102,241,0.12)');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('data-vi', vi);
+        line.setAttribute('data-ni', ni);
+        line.classList.add('fc-line');
+        svg.appendChild(line);
+      }
+    }
+
+    fcSection.appendChild(svg);
+
+    // FC Neurons
+    const neuronsDiv = document.createElement('div');
+    neuronsDiv.className = 'fc-neurons';
+    neuronsDiv.style.paddingTop = neuronOffsetY + 'px';
+
+    for (let ni = 0; ni < s.N; ni++) {
+      const neuronY = neuronOffsetY + ni * neuronGap + 15;
+      neuronPositions.push({ y: neuronY });
+
+      const neuron = document.createElement('div');
+      neuron.className = 'fc-neuron';
+      neuron.textContent = 'n' + (ni + 1);
+      neuron.dataset.ni = ni;
+      neuron.addEventListener('mouseenter', () => { highlightedNeuron = ni; updateHighlights(); });
+      neuron.addEventListener('mouseleave', () => { highlightedNeuron = -1; updateHighlights(); });
+      neuronsDiv.appendChild(neuron);
+    }
+
+    fcSection.appendChild(neuronsDiv);
+
+    // Wrap FC in a stage
+    const fcStage = document.createElement('div');
+    fcStage.className = 'stage';
+    fcStage.innerHTML = '<span class="stage-label">Fully-Connected Layer</span>';
+    fcStage.appendChild(fcSection);
+    fcStage.innerHTML += `<span class="stage-dims">${s.N} neurons</span>`;
+    diagram.appendChild(fcStage);
+
+    // --- Summary ---
+    document.getElementById('summaryLine').innerHTML =
+      `<span class="hl-tensor">${s.H}&times;${s.W}&times;${s.C}</span>` +
+      ` &rarr; flatten &rarr; <span class="hl-flat">${s.flatLen}</span>` +
+      ` &rarr; FC &rarr; <span class="hl-fc">${s.N}</span>`;
+
+    const params = s.flatLen * s.N + s.N;
+    document.getElementById('paramCount').innerHTML =
+      `Learnable parameters: <strong>${params.toLocaleString()}</strong>` +
+      ` &nbsp;(${s.flatLen} &times; ${s.N} weights + ${s.N} biases)`;
+
+    // Comparison: what if spatial was 4x bigger?
+    const bigH = s.H * 4, bigW = s.W * 4;
+    const bigFlat = bigH * bigW * s.C;
+    const bigParams = bigFlat * s.N + s.N;
+    const ratio = Math.round(bigParams / params);
+    document.getElementById('comparison').innerHTML =
+      `Without pooling, a <em>${bigH}&times;${bigW}&times;${s.C}</em> tensor would flatten to ` +
+      `<em>${bigFlat.toLocaleString()}</em> values, requiring <em>${bigParams.toLocaleString()}</em> FC parameters &mdash; ` +
+      `<em>${ratio}&times; more</em> than the current ${params.toLocaleString()}.`;
+  }
+
+  // ---- highlight connections on hover ----
+  function updateHighlights() {
+    const lines = document.querySelectorAll('.fc-line');
+    const neurons = document.querySelectorAll('.fc-neuron');
+    const cells = document.querySelectorAll('.vector-cell');
+
+    lines.forEach(line => {
+      const vi = parseInt(line.getAttribute('data-vi'));
+      const ni = parseInt(line.getAttribute('data-ni'));
+      let bright = false;
+      if (highlightedNeuron >= 0 && ni === highlightedNeuron) bright = true;
+      if (highlightedCell >= 0) {
+        // Check if this line corresponds to the highlighted cell
+        const cellPos = vectorCellPositions[vi];
+        if (cellPos && cellPos.idx === highlightedCell) bright = true;
+      }
+      line.setAttribute('stroke', bright ? 'rgba(251,191,36,0.6)' : 'rgba(99,102,241,0.12)');
+      line.setAttribute('stroke-width', bright ? '1.5' : '1');
+    });
+
+    neurons.forEach(n => {
+      const ni = parseInt(n.dataset.ni);
+      n.classList.toggle('active', ni === highlightedNeuron);
+    });
+
+    cells.forEach(c => {
+      const idx = parseInt(c.dataset.idx);
+      c.classList.toggle('highlighted', idx === highlightedCell);
+    });
+  }
+
+  // ---- events ----
+  document.querySelectorAll('.controls-panel select, .controls-panel input').forEach(el => {
+    el.addEventListener('input', () => {
+      document.getElementById('channelsVal').textContent = document.getElementById('channels').value;
+      document.getElementById('fcNeuronsVal').textContent = document.getElementById('fcNeurons').value;
+      highlightedNeuron = -1;
+      highlightedCell = -1;
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

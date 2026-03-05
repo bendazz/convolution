@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bias &amp; Activation Functions — Interactive Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+  }
+
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    color: #f8fafc;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ---------- layout ---------- */
+  .app {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .top-row {
+    display: flex;
+    gap: 0.8rem;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .panel {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    border: 1px solid #334155;
+  }
+
+  .panel h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 0.7rem;
+  }
+
+  .flow-arrow {
+    font-size: 1.3rem;
+    color: #475569;
+    align-self: center;
+    font-weight: 600;
+    flex-shrink: 0;
+    padding: 0 0.1rem;
+    padding-top: 2rem;
+  }
+
+  /* ---------- grids ---------- */
+  .grid-wrap { display: flex; justify-content: center; }
+
+  .grid {
+    display: inline-grid;
+    gap: 2px;
+    user-select: none;
+  }
+
+  .cell {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #334155;
+    color: #e2e8f0;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  /* image grid */
+  #imageGrid .cell { cursor: pointer; }
+  #imageGrid .cell.in-kernel {
+    background: #3b82f6;
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 0 8px rgba(59,130,246,0.5);
+    z-index: 2;
+  }
+  #imageGrid .cell.center-kernel {
+    background: #f59e0b;
+    color: #1e293b;
+    transform: scale(1.12);
+    box-shadow: 0 0 12px rgba(245,158,11,0.6);
+    z-index: 3;
+  }
+
+  /* kernel grid */
+  #kernelGrid .cell {
+    cursor: text;
+    background: #4338ca;
+    color: #e0e7ff;
+    font-size: 0.85rem;
+  }
+  #kernelGrid .cell input {
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: #e0e7ff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    outline: none;
+  }
+  #kernelGrid .cell input:focus {
+    background: rgba(255,255,255,0.12);
+    border-radius: 4px;
+  }
+
+  /* output grids */
+  .output-cell {
+    width: 52px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  }
+
+  .output-cell.active {
+    transform: scale(1.08);
+    z-index: 2;
+  }
+
+  #convGrid .output-cell.active {
+    background: #065f46;
+    color: #6ee7b7;
+    font-weight: 700;
+    border-color: #10b981;
+    box-shadow: 0 0 8px rgba(16,185,129,0.4);
+  }
+
+  #biasGrid .output-cell.active {
+    background: #7c2d12;
+    color: #fdba74;
+    font-weight: 700;
+    border-color: #f97316;
+    box-shadow: 0 0 8px rgba(249,115,22,0.4);
+  }
+
+  #actGrid .output-cell.active {
+    font-weight: 700;
+    transform: scale(1.08);
+    box-shadow: 0 0 8px rgba(99,102,241,0.4);
+  }
+
+  /* activation grid color coding */
+  #actGrid .output-cell.val-positive {
+    color: #6ee7b7;
+  }
+  #actGrid .output-cell.val-positive.active {
+    background: #065f46;
+    border-color: #10b981;
+  }
+  #actGrid .output-cell.val-zero {
+    color: #475569;
+  }
+  #actGrid .output-cell.val-zero.active {
+    background: #1e293b;
+    border-color: #64748b;
+    box-shadow: 0 0 8px rgba(100,116,139,0.3);
+  }
+  #actGrid .output-cell.val-negative {
+    color: #fca5a5;
+  }
+  #actGrid .output-cell.val-negative.active {
+    background: #450a0a;
+    border-color: #ef4444;
+    box-shadow: 0 0 8px rgba(239,68,68,0.3);
+  }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    align-items: center;
+  }
+
+  .controls label {
+    font-size: 0.82rem;
+    color: #94a3b8;
+  }
+
+  .controls button {
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .controls button:hover {
+    background: #334155;
+    border-color: #64748b;
+  }
+
+  .controls button.active {
+    background: #4338ca;
+    border-color: #6366f1;
+    color: #fff;
+  }
+
+  .controls select, .controls input[type="number"] {
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+  }
+
+  .controls input[type="number"] {
+    width: 60px;
+    text-align: center;
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.4rem;
+  }
+
+  /* ---------- bottom row ---------- */
+  .bottom-row {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .computation-panel {
+    flex: 1;
+    min-width: 360px;
+  }
+
+  .chart-panel {
+    flex: 0 0 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---------- computation ---------- */
+  .computation {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .comp-block { text-align: center; }
+
+  .comp-block h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .comp-grid {
+    display: inline-grid;
+    gap: 2px;
+  }
+
+  .comp-cell {
+    width: 52px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 3px;
+  }
+
+  .comp-cell.patch   { background: #1e3a5f; color: #93c5fd; }
+  .comp-cell.kern    { background: #3b1f7e; color: #c4b5fd; }
+  .comp-cell.product { background: #1e293b; color: #fbbf24; border: 1px solid #334155; }
+
+  .comp-operator {
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: #475569;
+    align-self: center;
+    padding-top: 0.8rem;
+  }
+
+  .result-box {
+    align-self: center;
+    padding-top: 0.8rem;
+    text-align: center;
+  }
+
+  .result-box .sum-label {
+    font-size: 0.68rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .result-box .sum-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #10b981;
+    margin-top: 0.1rem;
+  }
+
+  .pipeline-breakdown {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.8;
+    margin-top: 0.6rem;
+    min-height: 4em;
+  }
+
+  .pipeline-breakdown .step-conv { color: #94a3b8; }
+  .pipeline-breakdown .step-bias { color: #f97316; }
+  .pipeline-breakdown .step-act  { color: #10b981; }
+  .pipeline-breakdown .step-clip { color: #ef4444; font-weight: 700; }
+
+  /* ---------- chart ---------- */
+  #actChart {
+    background: #0f172a;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    margin-bottom: 0.8rem;
+  }
+
+  .explanation {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    line-height: 1.5;
+    text-align: center;
+    padding: 0 0.5rem;
+  }
+
+  .explanation strong {
+    color: #e2e8f0;
+  }
+
+  .explanation code {
+    font-family: 'Courier New', monospace;
+    color: #e2e8f0;
+    background: #334155;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-size: 0.78rem;
+  }
+
+  /* ---------- teaching row ---------- */
+  .teaching-row {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .callout {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .callout p {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1100px) {
+    .top-row { gap: 0.6rem; }
+    .cell { width: 40px; height: 40px; font-size: 0.75rem; }
+    .output-cell { width: 46px; height: 36px; font-size: 0.68rem; }
+    .flow-arrow { font-size: 1.1rem; }
+  }
+
+  @media (max-width: 900px) {
+    .top-row { flex-direction: column; align-items: center; }
+    .flow-arrow { transform: rotate(90deg); padding: 0; }
+    .bottom-row { flex-direction: column; }
+    .chart-panel { flex: 1 1 auto; }
+    .computation { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Bias &amp; Activation Functions</h1>
+<p class="subtitle">Hover over the image to see how each value flows through convolution, bias addition, and activation.</p>
+
+<div class="app">
+
+  <!-- Row 1: Pipeline flow -->
+  <div class="top-row">
+
+    <!-- Input Image -->
+    <div class="panel">
+      <h2>Input Image (5&times;5)</h2>
+      <div class="controls">
+        <label>Preset:&nbsp;</label>
+        <select id="imagePreset">
+          <option value="gradient">Gradient</option>
+          <option value="edges">Edges</option>
+          <option value="random">Random</option>
+        </select>
+      </div>
+      <div class="grid-wrap"><div class="grid" id="imageGrid"></div></div>
+    </div>
+
+    <!-- Kernel -->
+    <div class="panel">
+      <h2>Kernel (3&times;3)</h2>
+      <div class="controls" id="kernelPresets">
+        <button data-kernel="edge">Edge</button>
+        <button data-kernel="sharpen">Sharpen</button>
+        <button data-kernel="blur">Blur</button>
+      </div>
+      <div class="grid-wrap"><div class="grid" id="kernelGrid"></div></div>
+    </div>
+
+    <div class="flow-arrow">&rarr;</div>
+
+    <!-- Raw Conv Output -->
+    <div class="panel">
+      <h2>Raw Conv Output</h2>
+      <div class="grid-wrap"><div class="grid" id="convGrid"></div></div>
+      <div class="hint">conv(image, kernel)</div>
+    </div>
+
+    <div class="flow-arrow">+b &rarr;</div>
+
+    <!-- After Bias -->
+    <div class="panel">
+      <h2>After Bias</h2>
+      <div class="controls">
+        <label>Bias:&nbsp;</label>
+        <input type="number" id="biasInput" value="0" step="1">
+      </div>
+      <div class="grid-wrap"><div class="grid" id="biasGrid"></div></div>
+      <div class="hint">conv + bias</div>
+    </div>
+
+    <div class="flow-arrow">&sigma; &rarr;</div>
+
+    <!-- After Activation -->
+    <div class="panel">
+      <h2>After Activation</h2>
+      <div class="controls" id="activationPresets">
+        <button data-act="none">None</button>
+        <button data-act="relu" class="active">ReLU</button>
+        <button data-act="leaky">Leaky</button>
+        <button data-act="sigmoid">Sigmoid</button>
+        <button data-act="tanh">Tanh</button>
+      </div>
+      <div class="grid-wrap"><div class="grid" id="actGrid"></div></div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Computation breakdown + Chart -->
+  <div class="bottom-row">
+
+    <!-- Computation breakdown -->
+    <div class="panel computation-panel">
+      <h2>Computation at Current Position</h2>
+      <div class="computation" id="computation">
+        <div class="comp-block">
+          <h3>Image Patch</h3>
+          <div class="comp-grid" id="compPatch"></div>
+        </div>
+        <div class="comp-operator">&times;</div>
+        <div class="comp-block">
+          <h3>Kernel</h3>
+          <div class="comp-grid" id="compKernel"></div>
+        </div>
+        <div class="comp-operator">=</div>
+        <div class="comp-block">
+          <h3>Products</h3>
+          <div class="comp-grid" id="compProduct"></div>
+        </div>
+        <div class="comp-operator">&rarr;</div>
+        <div class="result-box">
+          <div class="sum-label">Sum</div>
+          <div class="sum-value" id="compSum">&mdash;</div>
+        </div>
+      </div>
+      <div class="pipeline-breakdown" id="pipelineBreakdown"></div>
+    </div>
+
+    <!-- Activation chart -->
+    <div class="panel chart-panel">
+      <h2>Activation Function</h2>
+      <canvas id="actChart" width="280" height="200"></canvas>
+      <div class="explanation" id="explanation"></div>
+    </div>
+
+  </div>
+
+  <!-- Row 3: Teaching callouts -->
+  <div class="teaching-row">
+    <div class="panel callout">
+      <h2>Why Bias?</h2>
+      <p>The bias is a learnable parameter added to each convolution output. It shifts the activation function's input, allowing the neuron to activate (or stay inactive) even when the weighted sum of inputs would otherwise be zero. Each filter in a convolutional layer has its own bias value.</p>
+    </div>
+    <div class="panel callout">
+      <h2>Why Non-linearity?</h2>
+      <p>Without activation functions, stacking multiple convolution layers would collapse into a single linear transformation &mdash; no matter how deep the network. Non-linear activations allow the network to learn complex patterns like curves, textures, and object boundaries that linear operations alone cannot capture.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // ---- constants ----
+  const IMG_SIZE = 5;
+  const KERN_SIZE = 3;
+  const OUT_SIZE = IMG_SIZE - KERN_SIZE + 1; // 3
+
+  // ---- state ----
+  let image = [];
+  let kernel = [];
+  let bias = 0;
+  let activationFn = 'relu';
+  let hoverR = -1, hoverC = -1; // kernel top-left in image coords
+
+  // ---- activation functions ----
+  const activations = {
+    none:    x => x,
+    relu:    x => Math.max(0, x),
+    leaky:   x => x >= 0 ? x : 0.01 * x,
+    sigmoid: x => 1 / (1 + Math.exp(-x)),
+    tanh:    x => Math.tanh(x)
+  };
+
+  const activationInfo = {
+    none: {
+      label: 'Linear (None)',
+      formula: 'f(x) = x',
+      desc: 'No activation applied. The output passes through unchanged. Useful as a baseline to see the effect of other activations.',
+      range: [-500, 500],
+      outRange: [-500, 500]
+    },
+    relu: {
+      label: 'ReLU',
+      formula: 'f(x) = max(0, x)',
+      desc: 'Rectified Linear Unit. Outputs zero for all negative inputs, passes positive values unchanged. The most widely used activation in modern CNNs.',
+      range: [-500, 500],
+      outRange: [-100, 500]
+    },
+    leaky: {
+      label: 'Leaky ReLU',
+      formula: 'f(x) = x if x > 0, else 0.01x',
+      desc: 'Like ReLU, but allows a small gradient (0.01) for negative values. This prevents "dead neurons" where ReLU permanently outputs zero.',
+      range: [-500, 500],
+      outRange: [-10, 500]
+    },
+    sigmoid: {
+      label: 'Sigmoid',
+      formula: 'f(x) = 1 / (1 + e\u207B\u02E3)',
+      desc: 'Squashes any input to the range (0, 1). Historically popular but can cause vanishing gradients for very large or very small inputs.',
+      range: [-8, 8],
+      outRange: [-0.15, 1.15]
+    },
+    tanh: {
+      label: 'Tanh',
+      formula: 'f(x) = tanh(x)',
+      desc: 'Squashes input to (-1, 1). Zero-centered, which can help training converge faster than sigmoid.',
+      range: [-5, 5],
+      outRange: [-1.3, 1.3]
+    }
+  };
+
+  function formatVal(v) {
+    if (activationFn === 'sigmoid' || activationFn === 'tanh') return v.toFixed(3);
+    if (activationFn === 'leaky' && v < 0 && v > -1) return v.toFixed(2);
+    return String(Math.round(v * 100) / 100);
+  }
+
+  // ---- image presets ----
+  const imagePresets = {
+    gradient() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++)
+          row.push(Math.round((r * IMG_SIZE + c) / (IMG_SIZE * IMG_SIZE - 1) * 255));
+        m.push(row);
+      }
+      return m;
+    },
+    edges() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++)
+          row.push((r >= 1 && r <= 3 && c >= 1 && c <= 3) ? 200 : 50);
+        m.push(row);
+      }
+      return m;
+    },
+    random() {
+      const m = [];
+      for (let r = 0; r < IMG_SIZE; r++) {
+        const row = [];
+        for (let c = 0; c < IMG_SIZE; c++)
+          row.push(Math.floor(Math.random() * 256));
+        m.push(row);
+      }
+      return m;
+    }
+  };
+
+  // ---- kernel presets ----
+  function makePreset(name) {
+    const k = 3, mid = 1;
+    const m = [[0,0,0],[0,0,0],[0,0,0]];
+    switch (name) {
+      case 'edge':
+        for (let r = 0; r < k; r++)
+          for (let c = 0; c < k; c++) m[r][c] = -1;
+        m[mid][mid] = 8;
+        return m;
+      case 'sharpen':
+        m[mid][mid] = 5;
+        m[mid-1][mid] = -1; m[mid+1][mid] = -1;
+        m[mid][mid-1] = -1; m[mid][mid+1] = -1;
+        return m;
+      case 'blur':
+        for (let r = 0; r < k; r++)
+          for (let c = 0; c < k; c++) m[r][c] = 1;
+        return m;
+      default:
+        m[mid][mid] = 1;
+        return m;
+    }
+  }
+
+  // ---- convolution ----
+  function convolveAt(or, oc) {
+    let sum = 0;
+    for (let kr = 0; kr < KERN_SIZE; kr++)
+      for (let kc = 0; kc < KERN_SIZE; kc++)
+        sum += image[or + kr][oc + kc] * kernel[kr][kc];
+    return sum;
+  }
+
+  // ---- rendering: image grid ----
+  function buildImageGrid() {
+    const grid = document.getElementById('imageGrid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${IMG_SIZE}, 46px)`;
+    for (let r = 0; r < IMG_SIZE; r++) {
+      for (let c = 0; c < IMG_SIZE; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.textContent = image[r][c];
+        const v = image[r][c];
+        cell.style.background = `rgb(${30 + v * 0.35}, ${40 + v * 0.35}, ${60 + v * 0.42})`;
+        cell.addEventListener('mouseenter', () => onHover(r, c));
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // ---- rendering: kernel grid ----
+  function buildKernelGrid() {
+    const grid = document.getElementById('kernelGrid');
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${KERN_SIZE}, 46px)`;
+    for (let r = 0; r < KERN_SIZE; r++) {
+      for (let c = 0; c < KERN_SIZE; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.value = kernel[r][c];
+        inp.addEventListener('change', () => {
+          kernel[r][c] = parseFloat(inp.value) || 0;
+          clearActiveKernelButton();
+          fullUpdate();
+        });
+        cell.appendChild(inp);
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function clearActiveKernelButton() {
+    document.querySelectorAll('#kernelPresets button').forEach(b => b.classList.remove('active'));
+  }
+
+  // ---- rendering: output grids ----
+  function buildOutputGrids() {
+    buildOneOutputGrid('convGrid', (r, c) => convolveAt(r, c), v => String(v));
+    buildOneOutputGrid('biasGrid', (r, c) => convolveAt(r, c) + bias, v => String(v));
+    buildOneOutputGrid('actGrid', (r, c) => {
+      const pre = convolveAt(r, c) + bias;
+      return activations[activationFn](pre);
+    }, v => formatVal(v));
+  }
+
+  function buildOneOutputGrid(id, valueFn, fmtFn) {
+    const grid = document.getElementById(id);
+    grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${OUT_SIZE}, 52px)`;
+    for (let r = 0; r < OUT_SIZE; r++) {
+      for (let c = 0; c < OUT_SIZE; c++) {
+        const val = valueFn(r, c);
+        const cell = document.createElement('div');
+        cell.className = 'output-cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.textContent = fmtFn(val);
+
+        // Color code activation grid
+        if (id === 'actGrid') {
+          if (val > 0.0005) cell.classList.add('val-positive');
+          else if (val < -0.0005) cell.classList.add('val-negative');
+          else cell.classList.add('val-zero');
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // ---- highlighting ----
+  function highlightImage() {
+    const cells = document.querySelectorAll('#imageGrid .cell');
+    cells.forEach(cell => {
+      cell.classList.remove('in-kernel', 'center-kernel');
+      const r = parseInt(cell.dataset.r);
+      const c = parseInt(cell.dataset.c);
+      if (hoverR >= 0) {
+        if (r >= hoverR && r < hoverR + KERN_SIZE && c >= hoverC && c < hoverC + KERN_SIZE) {
+          cell.classList.add('in-kernel');
+          if (r === hoverR + 1 && c === hoverC + 1) cell.classList.add('center-kernel');
+        }
+      }
+      if (!cell.classList.contains('in-kernel')) {
+        const v = image[r][c];
+        cell.style.background = `rgb(${30 + v * 0.35}, ${40 + v * 0.35}, ${60 + v * 0.42})`;
+      } else {
+        cell.style.background = '';
+      }
+    });
+  }
+
+  function highlightOutputGrids() {
+    ['convGrid', 'biasGrid', 'actGrid'].forEach(id => {
+      document.querySelectorAll(`#${id} .output-cell`).forEach(cell => {
+        cell.classList.remove('active');
+        if (hoverR >= 0) {
+          const outR = hoverR;
+          const outC = hoverC;
+          const r = parseInt(cell.dataset.r);
+          const c = parseInt(cell.dataset.c);
+          if (r === outR && c === outC) cell.classList.add('active');
+        }
+      });
+    });
+  }
+
+  // ---- computation breakdown ----
+  function updateComputation() {
+    const patchGrid = document.getElementById('compPatch');
+    const kernGrid = document.getElementById('compKernel');
+    const prodGrid = document.getElementById('compProduct');
+    const sumEl = document.getElementById('compSum');
+    const breakdownEl = document.getElementById('pipelineBreakdown');
+
+    const cols = `repeat(${KERN_SIZE}, 52px)`;
+    patchGrid.style.gridTemplateColumns = cols;
+    kernGrid.style.gridTemplateColumns = cols;
+    prodGrid.style.gridTemplateColumns = cols;
+
+    patchGrid.innerHTML = '';
+    kernGrid.innerHTML = '';
+    prodGrid.innerHTML = '';
+
+    if (hoverR < 0) {
+      sumEl.textContent = '\u2014';
+      breakdownEl.innerHTML = '<span style="color:#64748b">Hover over the input image to see the computation.</span>';
+      for (let i = 0; i < KERN_SIZE * KERN_SIZE; i++) {
+        patchGrid.innerHTML += '<div class="comp-cell patch">\u2014</div>';
+        kernGrid.innerHTML += '<div class="comp-cell kern">\u2014</div>';
+        prodGrid.innerHTML += '<div class="comp-cell product">\u2014</div>';
+      }
+      return;
+    }
+
+    let sum = 0;
+    const terms = [];
+    for (let kr = 0; kr < KERN_SIZE; kr++) {
+      for (let kc = 0; kc < KERN_SIZE; kc++) {
+        const pv = image[hoverR + kr][hoverC + kc];
+        const kv = kernel[kr][kc];
+        const prod = pv * kv;
+        sum += prod;
+
+        const pc = document.createElement('div');
+        pc.className = 'comp-cell patch';
+        pc.textContent = pv;
+        patchGrid.appendChild(pc);
+
+        const kc2 = document.createElement('div');
+        kc2.className = 'comp-cell kern';
+        kc2.textContent = kv;
+        kernGrid.appendChild(kc2);
+
+        const prc = document.createElement('div');
+        prc.className = 'comp-cell product';
+        prc.textContent = prod;
+        prodGrid.appendChild(prc);
+
+        terms.push(`${pv}\u00d7${kv}`);
+      }
+    }
+
+    sumEl.textContent = sum;
+
+    // Pipeline breakdown
+    const preAct = sum + bias;
+    const postAct = activations[activationFn](preAct);
+    const isClipped = activationFn === 'relu' && preAct < 0;
+    const isLeakyClip = activationFn === 'leaky' && preAct < 0;
+    const actName = activationInfo[activationFn].label;
+
+    let html = `<span class="step-conv">${terms.join(' + ')} = ${sum}</span><br>`;
+    html += `<span class="step-bias">+ bias(${bias}) = ${preAct}</span><br>`;
+
+    if (isClipped) {
+      html += `<span class="step-clip">${actName}(${preAct}) = 0  (clipped!)</span>`;
+    } else if (isLeakyClip) {
+      html += `<span class="step-clip">${actName}(${preAct}) = ${formatVal(postAct)}  (scaled by 0.01)</span>`;
+    } else {
+      html += `<span class="step-act">${actName}(${preAct}) = ${formatVal(postAct)}</span>`;
+    }
+
+    breakdownEl.innerHTML = html;
+  }
+
+  // ---- activation chart ----
+  function drawActivationChart() {
+    const canvas = document.getElementById('actChart');
+    const dpr = window.devicePixelRatio || 1;
+    const W = 280, H = 200;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const info = activationInfo[activationFn];
+    const fn = activations[activationFn];
+
+    // Determine chart range - adapt to data if needed
+    let xMin = info.range[0], xMax = info.range[1];
+    let yMin = info.outRange[0], yMax = info.outRange[1];
+
+    // If we have a hovered value, make sure the range covers it
+    if (hoverR >= 0) {
+      const preAct = convolveAt(hoverR, hoverC) + bias;
+      const postAct = fn(preAct);
+      if (activationFn !== 'sigmoid' && activationFn !== 'tanh') {
+        const absX = Math.abs(preAct);
+        const margin = Math.max(absX * 1.3, 50);
+        xMin = -margin; xMax = margin;
+        const absY = Math.max(Math.abs(postAct), Math.abs(fn(-margin)), Math.abs(fn(margin)));
+        yMin = -absY * 1.2 - 10; yMax = absY * 1.2 + 10;
+        if (activationFn === 'relu') { yMin = -yMax * 0.15; }
+        if (activationFn === 'leaky') { yMin = Math.min(yMin, fn(xMin) * 1.2); }
+      }
+    }
+
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = 25;
+    function toX(x) { return pad + (x - xMin) / (xMax - xMin) * (W - 2 * pad); }
+    function toY(y) { return H - pad - (y - yMin) / (yMax - yMin) * (H - 2 * pad); }
+
+    // Grid lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    // Horizontal zero
+    if (yMin <= 0 && yMax >= 0) {
+      ctx.strokeStyle = '#334155';
+      ctx.beginPath(); ctx.moveTo(pad, toY(0)); ctx.lineTo(W - pad, toY(0)); ctx.stroke();
+    }
+    // Vertical zero
+    if (xMin <= 0 && xMax >= 0) {
+      ctx.strokeStyle = '#334155';
+      ctx.beginPath(); ctx.moveTo(toX(0), pad); ctx.lineTo(toX(0), H - pad); ctx.stroke();
+    }
+
+    // Axis labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    const y0 = yMin <= 0 && yMax >= 0 ? toY(0) : H - pad;
+    ctx.fillText('x', W - 10, y0 - 4);
+    const x0 = xMin <= 0 && xMax >= 0 ? toX(0) : pad;
+    ctx.textAlign = 'right';
+    ctx.fillText('f(x)', x0 + 28, pad - 4);
+
+    // Draw the activation curve
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let started = false;
+    for (let px = pad; px <= W - pad; px++) {
+      const x = xMin + (px - pad) / (W - 2 * pad) * (xMax - xMin);
+      const y = fn(x);
+      const cy = toY(y);
+      // Clamp to visible area
+      const clampY = Math.max(pad - 5, Math.min(H - pad + 5, cy));
+      if (!started) { ctx.moveTo(px, clampY); started = true; }
+      else ctx.lineTo(px, clampY);
+    }
+    ctx.stroke();
+
+    // Draw dot for current value
+    if (hoverR >= 0) {
+      const preAct = convolveAt(hoverR, hoverC) + bias;
+      const postAct = fn(preAct);
+
+      const dotCX = toX(Math.max(xMin, Math.min(xMax, preAct)));
+      const dotCY = toY(Math.max(yMin, Math.min(yMax, postAct)));
+
+      // Dashed crosshairs
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+
+      // Vertical line from x-axis to curve
+      const axisY = yMin <= 0 && yMax >= 0 ? toY(0) : H - pad;
+      ctx.beginPath(); ctx.moveTo(dotCX, axisY); ctx.lineTo(dotCX, dotCY); ctx.stroke();
+
+      // Horizontal line from y-axis to curve
+      const axisX = xMin <= 0 && xMax >= 0 ? toX(0) : pad;
+      ctx.beginPath(); ctx.moveTo(axisX, dotCY); ctx.lineTo(dotCX, dotCY); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Dot
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(dotCX, dotCY, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Value labels
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 10px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`in=${Math.round(preAct)}`, dotCX, Math.min(H - 4, axisY + 14));
+      ctx.textAlign = 'left';
+      ctx.fillText(`out=${formatVal(postAct)}`, Math.max(pad, axisX + 4), dotCY - 8);
+    }
+
+    // Explanation text
+    document.getElementById('explanation').innerHTML =
+      `<strong>${info.label}</strong><br>` +
+      `<code>${info.formula}</code><br>` +
+      info.desc;
+  }
+
+  // ---- interaction ----
+  function onHover(imgR, imgC) {
+    // Snap to nearest valid kernel position (top-left)
+    let topR = imgR - 1; // center of 3x3 → offset by 1
+    let topC = imgC - 1;
+    topR = Math.max(0, Math.min(OUT_SIZE - 1, topR));
+    topC = Math.max(0, Math.min(OUT_SIZE - 1, topC));
+
+    if (topR === hoverR && topC === hoverC) return;
+    hoverR = topR;
+    hoverC = topC;
+
+    highlightImage();
+    highlightOutputGrids();
+    updateComputation();
+    drawActivationChart();
+  }
+
+  function fullUpdate() {
+    buildOutputGrids();
+    highlightImage();
+    highlightOutputGrids();
+    updateComputation();
+    drawActivationChart();
+  }
+
+  // ---- controls ----
+  document.getElementById('imagePreset').addEventListener('change', e => {
+    image = imagePresets[e.target.value]();
+    buildImageGrid();
+    fullUpdate();
+  });
+
+  document.getElementById('kernelPresets').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-kernel]');
+    if (!btn) return;
+    kernel = makePreset(btn.dataset.kernel);
+    document.querySelectorAll('#kernelPresets button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildKernelGrid();
+    fullUpdate();
+  });
+
+  document.getElementById('biasInput').addEventListener('input', e => {
+    bias = parseFloat(e.target.value) || 0;
+    fullUpdate();
+  });
+
+  document.getElementById('activationPresets').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    activationFn = btn.dataset.act;
+    document.querySelectorAll('#activationPresets button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    fullUpdate();
+  });
+
+  document.getElementById('imageGrid').addEventListener('mouseleave', () => {
+    hoverR = -1; hoverC = -1;
+    highlightImage();
+    highlightOutputGrids();
+    updateComputation();
+    drawActivationChart();
+  });
+
+  // ---- init ----
+  image = imagePresets.gradient();
+  kernel = makePreset('edge');
+  document.querySelector('#kernelPresets button[data-kernel="edge"]').classList.add('active');
+  buildImageGrid();
+  buildKernelGrid();
+  fullUpdate();
+})();
+</script>
+</body>
+</html>

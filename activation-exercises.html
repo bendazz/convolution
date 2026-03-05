@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bias &amp; Activation Exercises</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  a { color: #818cf8; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+  }
+
+  header .back { font-size: 0.85rem; color: #94a3b8; }
+  header .back:hover { color: #c4b5fd; }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0.5rem 0 0.3rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .problems {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .problem {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+  }
+
+  .problem h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin-bottom: 0.2rem;
+  }
+
+  .problem .description {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+  }
+
+  .problem-body {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .param-box {
+    text-align: center;
+  }
+
+  .param-box h3 {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+  }
+
+  .param-value {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: 'Courier New', monospace;
+  }
+
+  .param-value.conv-val {
+    background: #1e3a5f;
+    color: #93c5fd;
+  }
+
+  .param-value.bias-val {
+    background: #7c2d12;
+    color: #fdba74;
+  }
+
+  .act-label {
+    display: inline-block;
+    font-size: 0.82rem;
+    color: #c4b5fd;
+    background: #3b1f7e;
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+  }
+
+  .operator {
+    font-size: 1.4rem;
+    font-weight: 300;
+    color: #475569;
+  }
+
+  .answer-section {
+    align-self: center;
+    text-align: center;
+    min-width: 140px;
+    margin-left: auto;
+  }
+
+  .reveal-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .reveal-btn:hover {
+    background: #334155;
+    border-color: #6366f1;
+  }
+
+  .answer-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #10b981;
+    margin-bottom: 0.5rem;
+  }
+
+  .answer-steps {
+    font-size: 0.78rem;
+    font-family: 'Courier New', monospace;
+    line-height: 1.8;
+    color: #94a3b8;
+    text-align: left;
+    display: inline-block;
+  }
+
+  .step-bias { color: #f97316; }
+  .step-act { color: #10b981; }
+  .step-clip { color: #ef4444; font-weight: 700; }
+
+  .hidden { display: none; }
+
+  @media (max-width: 600px) {
+    .problem-body { flex-direction: column; align-items: flex-start; }
+    .answer-section { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back" href="index.html">&larr; Back to Hub</a>
+</header>
+
+<h1>Bias &amp; Activation Exercises</h1>
+<p class="subtitle">For each problem, apply the bias and activation function to the given convolution output. Then reveal the answer to check your work.</p>
+
+<div class="problems" id="problems"></div>
+
+<script>
+(() => {
+  const problems = [
+    {
+      title: 'Problem 1 \u2014 ReLU with positive input',
+      desc: 'The convolution produced a positive value with no bias. ReLU passes positive values through unchanged.',
+      convValue: 42,
+      bias: 0,
+      activation: 'relu'
+    },
+    {
+      title: 'Problem 2 \u2014 ReLU clips a negative value',
+      desc: 'The convolution produced a negative value. What does ReLU do with negative inputs?',
+      convValue: -15,
+      bias: 0,
+      activation: 'relu'
+    },
+    {
+      title: 'Problem 3 \u2014 Bias rescues a negative value',
+      desc: 'The raw conv output is negative, but a positive bias shifts it above zero before ReLU is applied.',
+      convValue: -8,
+      bias: 12,
+      activation: 'relu'
+    },
+    {
+      title: 'Problem 4 \u2014 Bias is not enough',
+      desc: 'Even with a positive bias, the pre-activation value is still negative. ReLU clips it to zero.',
+      convValue: -20,
+      bias: 5,
+      activation: 'relu'
+    },
+    {
+      title: 'Problem 5 \u2014 Sigmoid at the origin',
+      desc: 'Sigmoid maps any real number to the range (0, 1). What is sigmoid(0)?',
+      convValue: 0,
+      bias: 0,
+      activation: 'sigmoid'
+    },
+    {
+      title: 'Problem 6 \u2014 Sigmoid with large positive input',
+      desc: 'Large positive inputs push sigmoid very close to 1. Compute sigmoid(10).',
+      convValue: 8,
+      bias: 2,
+      activation: 'sigmoid'
+    },
+    {
+      title: 'Problem 7 \u2014 Tanh at the origin',
+      desc: 'Tanh maps any real number to (-1, 1). It is zero-centered, unlike sigmoid. What is tanh(0)?',
+      convValue: 0,
+      bias: 0,
+      activation: 'tanh'
+    },
+    {
+      title: 'Problem 8 \u2014 Tanh with negative input',
+      desc: 'Unlike ReLU, tanh does not clip negatives to zero. It maps them smoothly to (-1, 0).',
+      convValue: -3,
+      bias: 1,
+      activation: 'tanh'
+    },
+    {
+      title: 'Problem 9 \u2014 Leaky ReLU with negative input',
+      desc: 'Leaky ReLU allows a small slope (0.01) for negative inputs instead of hard zero. This prevents "dead neurons."',
+      convValue: -50,
+      bias: 0,
+      activation: 'leaky'
+    },
+    {
+      title: 'Problem 10 \u2014 Full pipeline challenge',
+      desc: 'A large negative conv output with a moderate positive bias, through ReLU. Does the value survive, or does ReLU clip it?',
+      convValue: -147,
+      bias: 100,
+      activation: 'relu'
+    }
+  ];
+
+  const activations = {
+    relu:    x => Math.max(0, x),
+    leaky:   x => x >= 0 ? x : 0.01 * x,
+    sigmoid: x => 1 / (1 + Math.exp(-x)),
+    tanh:    x => Math.tanh(x)
+  };
+
+  const actLabels = {
+    relu: 'ReLU',
+    leaky: 'Leaky ReLU',
+    sigmoid: 'Sigmoid',
+    tanh: 'Tanh'
+  };
+
+  const actFormulas = {
+    relu: 'max(0, x)',
+    leaky: 'x if x > 0, else 0.01x',
+    sigmoid: '1 / (1 + e^(-x))',
+    tanh: 'tanh(x)'
+  };
+
+  function formatResult(val, act) {
+    if (act === 'sigmoid' || act === 'tanh') return val.toFixed(3);
+    if (act === 'leaky' && val < 0) return val.toFixed(2);
+    return String(val);
+  }
+
+  const container = document.getElementById('problems');
+
+  problems.forEach((prob, idx) => {
+    const preAct = prob.convValue + prob.bias;
+    const postAct = activations[prob.activation](preAct);
+    const isClipped = (prob.activation === 'relu' && preAct < 0) ||
+                      (prob.activation === 'leaky' && preAct < 0);
+    const actName = actLabels[prob.activation];
+    const formula = actFormulas[prob.activation];
+
+    const el = document.createElement('div');
+    el.className = 'problem';
+    el.innerHTML = `
+      <h2>${prob.title}</h2>
+      <p class="description">${prob.desc}</p>
+      <div class="problem-body">
+        <div class="param-box">
+          <h3>Conv Output</h3>
+          <div class="param-value conv-val">${prob.convValue}</div>
+        </div>
+        <div class="operator">+</div>
+        <div class="param-box">
+          <h3>Bias</h3>
+          <div class="param-value bias-val">${prob.bias}</div>
+        </div>
+        <div class="operator">&rarr;</div>
+        <div class="param-box">
+          <h3>Activation</h3>
+          <div class="act-label">${actName}<br><span style="font-size:0.68rem;font-weight:400;color:#a78bfa;">${formula}</span></div>
+        </div>
+        <div class="answer-section">
+          <button class="reveal-btn" data-idx="${idx}">Reveal Answer</button>
+          <div class="hidden" id="answer-${idx}">
+            <div class="answer-value">${formatResult(postAct, prob.activation)}</div>
+            <div class="answer-steps">
+              conv = ${prob.convValue}<br>
+              <span class="step-bias">+ bias(${prob.bias}) = ${preAct}</span><br>
+              <span class="${isClipped ? 'step-clip' : 'step-act'}">${actName}(${preAct}) = ${formatResult(postAct, prob.activation)}${isClipped && prob.activation === 'relu' ? '  (clipped!)' : ''}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  // Reveal buttons
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.reveal-btn');
+    if (!btn) return;
+    const idx = btn.dataset.idx;
+    document.getElementById(`answer-${idx}`).classList.remove('hidden');
+    btn.classList.add('hidden');
+  });
+})();
+</script>
+</body>
+</html>

@@ -84,6 +84,10 @@
   .card-pipeline .icon { color: #fb923c; }
   .card-conv-layer .icon { color: #38bdf8; }
   .card-tensor-ex .icon { color: #f472b6; }
+  .card-activation .icon { color: #f97316; }
+  .card-act-ex .icon { color: #84cc16; }
+  .card-flatten .icon { color: #06b6d4; }
+  .card-flat-ex .icon { color: #22d3ee; }
 </style>
 </head>
 <body>
@@ -134,6 +138,26 @@
       <span class="icon">&#9998;</span>
       <h2>Tensor Shape Exercises</h2>
       <p>Track a tensor through conv and pool layers with multiple filters. Predict the final output shape.</p>
+    </a>
+    <a class="card card-activation" href="activation.html">
+      <span class="icon">&#9889;</span>
+      <h2>Bias &amp; Activations</h2>
+      <p>See how bias shifts convolution output and activation functions like ReLU, Sigmoid, and Tanh introduce non-linearity.</p>
+    </a>
+    <a class="card card-act-ex" href="activation-exercises.html">
+      <span class="icon">&#9998;</span>
+      <h2>Activation Exercises</h2>
+      <p>10 problems: apply bias and activation functions to convolution outputs. Master ReLU clipping and sigmoid squashing.</p>
+    </a>
+    <a class="card card-flatten" href="flatten.html">
+      <span class="icon">&#9649;</span>
+      <h2>Flatten to FFN</h2>
+      <p>See how a 3D tensor is flattened into a 1D vector and connected to a fully-connected layer. Understand the parameter explosion.</p>
+    </a>
+    <a class="card card-flat-ex" href="flatten-exercises.html">
+      <span class="icon">&#9998;</span>
+      <h2>Flatten Exercises</h2>
+      <p>Given a CNN architecture, compute how many values enter the fully-connected layer after flattening. 10 problems.</p>
     </a>
   </div>
 </body>
